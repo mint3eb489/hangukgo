@@ -16,6 +16,70 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Falls die Roh-Dateien (TypeScript .tsx) direkt ohne Build-Schritt auf GitHub Pages ausgeliefert werden,
+      // bleibt #root leer. Dieses Skript erkennt das nach 2.5 Sekunden und zeigt eine klare Kurzanleitung statt einer weißen Seite.
+      window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && root.children.length === 0) {
+            var workflowYaml = [
+              'name: Deploy to GitHub Pages',
+              'on:',
+              '  push:',
+              '    branches: ["main", "master"]',
+              '  workflow_dispatch:',
+              'permissions:',
+              '  contents: read',
+              '  pages: write',
+              '  id-token: write',
+              'concurrency:',
+              '  group: "pages"',
+              '  cancel-in-progress: true',
+              'jobs:',
+              '  build-and-deploy:',
+              '    environment:',
+              '      name: github-pages',
+              '      url: ${{ steps.deployment.outputs.page_url }}',
+              '    runs-on: ubuntu-latest',
+              '    steps:',
+              '      - uses: actions/checkout@v4',
+              '      - uses: actions/setup-node@v4',
+              '        with:',
+              '          node-version: 22',
+              '      - run: npm install --legacy-peer-deps',
+              '      - run: npm run build',
+              '      - uses: actions/configure-pages@v5',
+              '      - uses: actions/upload-pages-artifact@v3',
+              '        with:',
+              '          path: ./dist',
+              '      - id: deployment',
+              '        uses: actions/deploy-pages@v4'
+            ].join('\n');
+
+            root.innerHTML =
+              '<div style="min-height:100vh;background:#F7F4EE;color:#1F1D1A;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">' +
+                '<div style="max-width:620px;width:100%;background:#FFFFFF;border:1px solid #E5DFD3;border-radius:20px;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,0.06);">' +
+                  '<div style="display:inline-block;background:#C83E2B15;color:#C83E2B;font-weight:700;font-size:12px;padding:4px 10px;border-radius:6px;margin-bottom:12px;">GitHub Pages Build-Hinweis</div>' +
+                  '<h1 style="margin:0 0 10px;font-size:22px;font-weight:800;">한국GO – Fast geschafft!</h1>' +
+                  '<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#57534E;">' +
+                    'Deine Domain &amp; HTTPS funktionieren bereits! Die Seite war weiß, weil GitHub Pages aktuell den <strong>unübersetzten TypeScript-Quellcode (<code>/src/main.tsx</code>)</strong> direkt ausliefert, statt die App vorher zu bauen.' +
+                  '</p>' +
+                  '<div style="background:#F7F4EE;border:1px solid #E5DFD3;border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.6;">' +
+                    '<strong>So aktivierst du den automatischen Build in 2 Schritten:</strong>' +
+                    '<ol style="margin:8px 0 0;padding-left:20px;">' +
+                      '<li style="margin-bottom:8px;">Gehe in deinem GitHub-Repository auf <strong>Settings &rarr; Pages</strong> und stelle unter <strong>Build and deployment &rarr; Source</strong> von <em>"Deploy from a branch"</em> auf <strong>"GitHub Actions"</strong> um.</li>' +
+                      '<li>Stelle sicher, dass die Datei <code>.github/workflows/deploy.yml</code> im Repository vorhanden ist (Ordner mit Punkt wie <code>.github</code> sind beim Entpacken oft versteckt). Falls sie fehlt, klicke in GitHub auf <strong>Add file &rarr; Create new file</strong>, nenne sie <code>.github/workflows/deploy.yml</code> und füge diesen Code ein:</li>' +
+                    '</ol>' +
+                  '</div>' +
+                  '<pre id="wf-code" style="background:#1C1917;color:#E7E5E4;padding:12px;border-radius:10px;font-size:11px;overflow-x:auto;margin:0 0 12px;">' + workflowYaml.replace(/</g, '&lt;') + '</pre>' +
+                  '<button onclick="navigator.clipboard.writeText(document.getElementById(\'wf-code\').innerText);this.innerText=\'✓ Workflow-Code kopiert!\';" style="background:#C83E2B;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;width:100%;">Workflow-Code (.github/workflows/deploy.yml) kopieren</button>' +
+                '</div>' +
+              '</div>';
+          }
+        }, 2500);
+      });
+    </script>
   </body>
 </html>
 

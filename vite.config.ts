@@ -51,6 +51,7 @@ function koreanTtsPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
+    base: './',
     plugins: [react(), tailwindcss(), koreanTtsPlugin()],
     resolve: {
       alias: {
