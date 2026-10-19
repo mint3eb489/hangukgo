@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "VocabFile": {
+      "title": "VocabFile",
+      "description": "Uploaded or stored CSV vocabulary file in cloud storage",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the CSV file record",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the user who uploaded this CSV file",
+          "maxLength": 128
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Name of the CSV file (e.g. topik1_verbs.csv)",
+          "maxLength": 200
+        },
+        "content": {
+          "type": "string",
+          "description": "Raw CSV content or parsed vocabulary data",
+          "maxLength": 500000
+        },
+        "vocabCount": {
+          "type": "number",
+          "description": "Number of vocabulary items in this file"
+        },
+        "topikLevel": {
+          "type": "string",
+          "description": "TOPIK Level associated with this file",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp in ISO 8601 format",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp in ISO 8601 format",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "fileName", "content", "vocabCount", "topikLevel", "createdAt", "updatedAt"]
+    },
+    "CustomVocabItem": {
+      "title": "CustomVocabItem",
+      "description": "Individual vocabulary card stored in the cloud with German and English translations",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique card identifier",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the creator",
+          "maxLength": 128
+        },
+        "korean": {
+          "type": "string",
+          "description": "Korean term in Hangul",
+          "maxLength": 200
+        },
+        "german": {
+          "type": "string",
+          "description": "German translation",
+          "maxLength": 500
+        },
+        "english": {
+          "type": "string",
+          "description": "English translation (optional)",
+          "maxLength": 500
+        },
+        "hanja": {
+          "type": "string",
+          "description": "Hanja characters or empty",
+          "maxLength": 50
+        },
+        "category": {
+          "type": "string",
+          "description": "Grammatical category",
+          "maxLength": 50
+        },
+        "subcategory": {
+          "type": "string",
+          "description": "Subtopic or lesson tag",
+          "maxLength": 100
+        },
+        "topikLevel": {
+          "type": "string",
+          "description": "Target TOPIK level",
+          "maxLength": 32
+        },
+        "exampleKorean": {
+          "type": "string",
+          "description": "Korean example sentence",
+          "maxLength": 1000
+        },
+        "exampleGerman": {
+          "type": "string",
+          "description": "German translation of the example sentence",
+          "maxLength": 1000
+        },
+        "exampleEnglish": {
+          "type": "string",
+          "description": "English translation of the example sentence",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "korean", "german", "category", "topikLevel", "createdAt"]
+    },
+    "SrsRecord": {
+      "title": "SrsRecord",
+      "description": "Spaced repetition state for a specific vocabulary card, strictly individual per user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier matching the vocabulary card ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "level": {
+          "type": "number",
+          "description": "SRS mastery level (0-5)"
+        },
+        "nextReviewDate": {
+          "type": "number",
+          "description": "Timestamp in milliseconds when next review is due"
+        },
+        "reps": {
+          "type": "number",
+          "description": "Total repetition count"
+        },
+        "lapses": {
+          "type": "number",
+          "description": "Total lapse count"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last review timestamp in ISO format",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "level", "nextReviewDate", "reps", "lapses", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/sharedVocab/{vocabId}": {
+      "schema": "CustomVocabItem",
+      "description": "Global shared vocabulary items accessible for the whole app"
+    },
+    "/sharedVocabFiles/{fileId}": {
+      "schema": "VocabFile",
+      "description": "Global shared CSV/MD vocabulary files uploaded for the whole app"
+    },
+    "/users/{userId}/customVocab/{vocabId}": {
+      "schema": "CustomVocabItem",
+      "description": "User custom flashcards and imported words"
+    },
+    "/users/{userId}/vocabFiles/{fileId}": {
+      "schema": "VocabFile",
+      "description": "User uploaded and saved CSV vocabulary files"
+    },
+    "/users/{userId}/srsProgress/{progressId}": {
+      "schema": "SrsRecord",
+      "description": "User individual spaced repetition study progress"
+    }
+  }
+}

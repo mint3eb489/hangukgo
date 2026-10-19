@@ -1,0 +1,6 @@
+{
+  "name": "한국GO - Korean Flashcards & Quiz",
+  "description": "Interaktiver Karteikarten- und Quiz-Trainer für TOPIK I und TOPIK II (B1) mit koreanischer Sprachausgabe, Beispielsätzen und Vokabel-Import.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for VocabFile
+    function isValidVocabFile(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 200
+        && data.content is string && data.content.size() <= 500000
+        && data.vocabCount is number && data.vocabCount >= 0
+        && data.topikLevel is string && data.topikLevel.size() <= 32
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && data.keys().hasAll(['id', 'userId', 'fileName', 'content', 'vocabCount', 'topikLevel', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'fileName', 'content', 'vocabCount', 'topikLevel', 'createdAt', 'updatedAt']);
+    }
+
+    // Validation for CustomVocabItem (supporting optional english and german translations)
+    function isValidCustomVocab(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.korean is string && data.korean.size() > 0 && data.korean.size() <= 200
+        && (!('german' in data) || (data.german is string && data.german.size() <= 500))
+        && (!('english' in data) || (data.english is string && data.english.size() <= 500))
+        && (('german' in data && data.german.size() > 0) || ('english' in data && data.english.size() > 0))
+        && (!('hanja' in data) || (data.hanja is string && data.hanja.size() <= 50))
+        && data.category is string && data.category.size() <= 50
+        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 100))
+        && data.topikLevel is string && data.topikLevel.size() <= 32
+        && (!('exampleKorean' in data) || (data.exampleKorean is string && data.exampleKorean.size() <= 1000))
+        && (!('exampleGerman' in data) || (data.exampleGerman is string && data.exampleGerman.size() <= 1000))
+        && (!('exampleEnglish' in data) || (data.exampleEnglish is string && data.exampleEnglish.size() <= 1000))
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && data.keys().hasAll(['id', 'userId', 'korean', 'category', 'topikLevel', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'korean', 'german', 'english', 'hanja', 'category', 'subcategory', 'topikLevel', 'exampleKorean', 'exampleGerman', 'exampleEnglish', 'createdAt']);
+    }
+
+    // Validation for SrsRecord
+    function isValidSrsRecord(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.level is number && data.level >= 0 && data.level <= 5
+        && data.nextReviewDate is number
+        && data.reps is number && data.reps >= 0
+        && data.lapses is number && data.lapses >= 0
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && data.keys().hasAll(['id', 'userId', 'level', 'nextReviewDate', 'reps', 'lapses', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'level', 'nextReviewDate', 'reps', 'lapses', 'updatedAt']);
+    }
+
+    // 1. GLOBAL SHARED VOCABULARY (Applies to the entire app for all users)
+    match /sharedVocab/{vocabId} {
+      allow get: if isSignedIn() && isValidId(vocabId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidId(vocabId)
+        && isValidCustomVocab(incoming(), request.auth.uid)
+        && incoming().id == vocabId;
+      allow update: if isSignedIn()
+        && isValidId(vocabId)
+        && isValidCustomVocab(incoming(), incoming().userId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isValidId(vocabId);
+    }
+
+    // 2. GLOBAL SHARED CSV / VOCAB FILES (Uploaded for the entire app)
+    match /sharedVocabFiles/{fileId} {
+      allow get: if isSignedIn() && isValidId(fileId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidId(fileId)
+        && isValidVocabFile(incoming(), request.auth.uid)
+        && incoming().id == fileId;
+      allow update: if isSignedIn()
+        && isValidId(fileId)
+        && isValidVocabFile(incoming(), incoming().userId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isValidId(fileId);
+    }
+
+    // 3. USER SUBCOLLECTIONS (Individual user accounts & isolated SRS progress)
+    match /users/{userId} {
+      allow read, write: if false;
+
+      // User's personal CSV files
+      match /vocabFiles/{fileId} {
+        allow get: if isOwner(userId) && isValidId(fileId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(fileId)
+          && isValidVocabFile(incoming(), userId)
+          && incoming().id == fileId;
+        allow update: if isOwner(userId)
+          && isValidId(fileId)
+          && isValidVocabFile(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(fileId);
+      }
+
+      // User's personal custom cards
+      match /customVocab/{vocabId} {
+        allow get: if isOwner(userId) && isValidId(vocabId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(vocabId)
+          && isValidCustomVocab(incoming(), userId)
+          && incoming().id == vocabId;
+        allow update: if isOwner(userId)
+          && isValidId(vocabId)
+          && isValidCustomVocab(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(vocabId);
+      }
+
+      // Spaced Repetition Study Progress (STRICTLY INDIVIDUAL PER USER)
+      match /srsProgress/{progressId} {
+        allow get: if isOwner(userId) && isValidId(progressId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(progressId)
+          && isValidSrsRecord(incoming(), userId)
+          && incoming().id == progressId;
+        allow update: if isOwner(userId)
+          && isValidId(progressId)
+          && isValidSrsRecord(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(progressId);
+      }
+    }
+  }
+}
