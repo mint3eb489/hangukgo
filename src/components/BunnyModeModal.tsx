@@ -90,11 +90,11 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-ink/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50"
+      className="fixed inset-0 bg-ink/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50"
       onClick={onClose}
     >
       <div
-        className="bg-hanji border border-border-card rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-pop max-h-[90vh] overflow-y-auto"
+        className="bg-hanji border border-border-card rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-pop safe-modal-panel overflow-y-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

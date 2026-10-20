@@ -51,11 +51,63 @@ html, body {
   background-color: var(--bg-hanji);
   color: var(--text-ink);
   font-family: var(--font-sans);
+  min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* iPhone / iOS Safe Area Utilities (Dynamic Island / Status Bar & Bottom Home Swipe Bar) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.safe-app-shell {
+  min-height: 100dvh;
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  padding-left: max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem));
+  padding-right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
+}
+
+@media screen and (min-width: 768px) {
+  .safe-app-shell {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.safe-bottom-nav {
+  padding-top: 0.35rem;
+  padding-bottom: max(0.45rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+  min-height: calc(3.85rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-modal-overlay {
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+  padding-bottom: max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+  padding-left: max(0.75rem, calc(env(safe-area-inset-left, 0px) + 0.75rem));
+  padding-right: max(0.75rem, calc(env(safe-area-inset-right, 0px) + 0.75rem));
+}
+
+.safe-modal-panel {
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.5rem);
+}
+
+.safe-drawer-panel {
+  padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.85rem));
+  padding-left: max(1.25rem, calc(env(safe-area-inset-left, 0px) + 1.25rem));
+  padding-right: max(1.25rem, calc(env(safe-area-inset-right, 0px) + 1.25rem));
 }
 
 /* Verhindert das automatische Heranzoomen bei Fokus auf Text- und Auswahleingaben auf Smartphones */

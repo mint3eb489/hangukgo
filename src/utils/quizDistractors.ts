@@ -156,6 +156,20 @@ export const CATEGORY_LEXICON: Record<VocabCategory, DistractorItem[]> = {
     { kr: '-기 전에', de: 'bevor' },
     { kr: '-(으)ㄴ 후에', de: 'nachdem' },
   ],
+  custom: [
+    { kr: '대박', de: 'Wahnsinn! / Unglaublich!' },
+    { kr: '진짜', de: 'wirklich / echt' },
+    { kr: '보고 싶다', de: 'ich vermisse dich' },
+    { kr: '사랑해', de: 'ich liebe dich' },
+    { kr: '걱정 마', de: 'keine Sorge' },
+    { kr: '어떻게 해', de: 'was soll ich tun' },
+    { kr: '운명', de: 'Schicksal' },
+    { kr: '기억해', de: 'erinnere dich' },
+    { kr: '괜찮아', de: 'alles gut / in Ordnung' },
+    { kr: '가지 마', de: 'geh nicht' },
+    { kr: '약속해', de: 'versprich es mir' },
+    { kr: '행복하자', de: 'lass uns glücklich sein' },
+  ],
 };
 
 function normalizeAnswerText(text: string): string {

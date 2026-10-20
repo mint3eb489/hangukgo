@@ -13,6 +13,7 @@ interface UserProfileModalProps {
   currentLevel: TopikLevel;
   topik1Items: VocabItem[];
   topik2Items: VocabItem[];
+  dramaItems?: VocabItem[];
   srsMap: SrsMap;
   lang: AppLanguage;
   onOpenSync: () => void;
@@ -83,6 +84,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   currentLevel,
   topik1Items,
   topik2Items,
+  dramaItems = [],
   srsMap,
   lang,
   onOpenSync,
@@ -101,7 +103,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   }, [isOpen, onClose]);
 
   const profileStats = useMemo(() => {
-    const allItems = [...topik1Items, ...topik2Items];
+    const allItems = [...topik1Items, ...topik2Items, ...dramaItems];
     let totalPoints = 0;
     let totalMastered = 0;
     let totalLearning = 0;
@@ -198,17 +200,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       rank,
       rankProgressPct,
     };
-  }, [topik1Items, topik2Items, currentLevel, srsMap, t.categories]);
+  }, [topik1Items, topik2Items, dramaItems, currentLevel, srsMap, t.categories]);
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs safe-modal-overlay overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg hanji-card-elevated rounded-3xl p-6 sm:p-7 space-y-5 max-h-[90vh] overflow-y-auto animate-pop"
+        className="w-full max-w-lg hanji-card-elevated rounded-3xl p-5 sm:p-7 space-y-5 safe-modal-panel overflow-y-auto overscroll-contain animate-pop"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

@@ -73,7 +73,7 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
       onClick={onClose}
     >
       <aside
-        className="w-full max-w-sm bg-hanji border-l border-border-card h-full shadow-2xl flex flex-col justify-between overflow-y-auto p-6 animate-slide-left"
+        className="w-full max-w-sm bg-hanji border-l border-border-card h-full shadow-2xl flex flex-col justify-between overflow-y-auto overscroll-contain safe-drawer-panel animate-slide-left"
         onClick={(e) => e.stopPropagation()}
         aria-label={isKr ? '설정 및 문화 도구' : 'Extras & Einstellungen'}
       >

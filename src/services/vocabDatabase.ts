@@ -106,14 +106,21 @@ export function isPartOfSpeechValue(raw?: string): VocabCategory | null {
   return null;
 }
 
+export function isDramaVocab(item: { level?: string; cat?: string }): boolean {
+  if (item.level && item.level.toLowerCase().includes('drama')) return true;
+  if (item.cat === 'custom') return true;
+  return false;
+}
+
 /**
  * Helper to normalize category
  */
 export function normalizeCategory(rawCat?: string, fallback: VocabCategory = 'noun'): VocabCategory {
   if (!rawCat) return fallback;
+  const c = rawCat.toLowerCase().trim();
+  if (c === 'custom' || c.includes('drama')) return 'custom';
   const exact = isPartOfSpeechValue(rawCat);
   if (exact) return exact;
-  const c = rawCat.toLowerCase().trim();
   if (c.includes('adjektiv') || c.includes('adjective') || c.includes('형용사')) return 'adjective';
   if (c.includes('adverb') || c.includes('부사')) return 'adverb';
   if (c.includes('ausdruck') || c.includes('ausdrücke') || c.includes('phrase') || c.includes('redewendung') || c.includes('표현') || c.includes('관용구')) return 'phrase';
@@ -274,6 +281,9 @@ export function refineLegacyCategory(
   en?: string,
   savedCat: VocabCategory = 'noun'
 ): VocabCategory {
+  if (savedCat === 'custom') {
+    return 'custom';
+  }
   if (savedCat === 'adjective' || savedCat === 'adverb' || savedCat === 'phrase' || savedCat === 'grammar') {
     return savedCat;
   }
@@ -285,6 +295,48 @@ export function refineLegacyCategory(
     return inferred;
   }
   return savedCat;
+}
+
+export function cleanDramaTitle(rawName: string): string {
+  if (!rawName) return '';
+  const trimmed = rawName.trim();
+  if (/^\d+\s+Dateien\s*\(/i.test(trimmed)) return '';
+  const cleaned = trimmed
+    .replace(/\.[^/.]+$/, '') // remove file extension
+    .replace(/^@drama:\s*/i, '')
+    .replace(/[_]+/g, ' ')
+    .replace(/\b(k[\s-]*drama|kdrama|vokabelliste|vokabeln|wortliste|vocab|vocabulary|words|liste)\b/gi, '')
+    .replace(/\b(topik\s*(i|ii|1|2))\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s\-:–—|·🎬]+|[\s\-:–—|·]+$/g, '')
+    .trim();
+  return cleaned;
+}
+
+export function isGenericDramaSub(subName: string): boolean {
+  if (!subName) return true;
+  const s = subName.trim().toLowerCase();
+  if (!s) return true;
+  if (
+    s === 'allgemein' ||
+    s === 'import' ||
+    s === 'custom' ||
+    s === 'k-drama' ||
+    s === 'kdrama' ||
+    s === 'drama' ||
+    s === 'eigene vokabeln' ||
+    s === 'vokabeln' ||
+    s === 'vokabelliste' ||
+    s === 'wortliste' ||
+    /^\d+\s+dateien\b/.test(s)
+  ) {
+    return true;
+  }
+  if (isPartOfSpeechValue(s)) return true;
+  if (/^(\d+[.)]?\s*)?(wichtige\s+)?(nomen|substantive|verben|adjektive|adverbien|ausdrücke|redewendungen|phrasen|grammatik|vokabeln|wörter)\b/i.test(s)) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -305,7 +357,14 @@ export function parseVocabCsv(
   const trimmed = csvOrMdText.trim();
   if (!trimmed) return [];
 
-  const fallbackSub = defaultSubcategory.trim() || 'Allgemein';
+  const isDefaultDrama =
+    defaultTopikLevel === 'Drama' ||
+    String(defaultTopikLevel).toLowerCase().includes('drama') ||
+    defaultCategory === 'custom';
+  const cleanedDefaultDrama = isDefaultDrama ? cleanDramaTitle(defaultSubcategory) : '';
+  const fallbackSub =
+    (isDefaultDrama && cleanedDefaultDrama ? cleanedDefaultDrama : defaultSubcategory.trim()) ||
+    (isDefaultDrama ? 'K-Drama' : 'Allgemein');
 
   // 1. JSON Array Support
   if (trimmed.startsWith('[') || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
@@ -324,19 +383,22 @@ export function parseVocabCsv(
 
         const posCat = isPartOfSpeechValue(rawCat);
         const finalSub = rawSub || (!posCat && rawCat ? rawCat : fallbackSub);
-        const finalCat = posCat || inferWordCategory(kr, de || (en || ''), en, defaultCategory);
+        const isDrama =
+          (obj.level && String(obj.level).toLowerCase().includes('drama')) ||
+          defaultTopikLevel === 'Drama';
+        const finalLevel: TopikLevel = isDrama
+          ? 'Drama'
+          : obj.level === 'TOPIK II' || obj.level === 'TOPIK 2'
+          ? 'TOPIK II'
+          : obj.level === 'TOPIK I' || obj.level === 'TOPIK 1'
+          ? 'TOPIK I'
+          : defaultTopikLevel;
+        const resolvedCategory = isDrama ? 'custom' : (posCat || inferWordCategory(kr, de || (en || ''), en, defaultCategory));
 
         results.push({
           id: `c_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
-          level:
-            obj.level && String(obj.level).toLowerCase().includes('drama')
-              ? 'Drama'
-              : obj.level === 'TOPIK II' || obj.level === 'TOPIK 2'
-              ? 'TOPIK II'
-              : obj.level === 'TOPIK I' || obj.level === 'TOPIK 1'
-              ? 'TOPIK I'
-              : defaultTopikLevel,
-          cat: finalCat,
+          level: finalLevel,
+          cat: resolvedCategory,
           sub: finalSub,
           kr,
           de: de || (en ? en : ''),
@@ -374,8 +436,10 @@ export function parseVocabCsv(
 
   const headerMap: { [col: string]: number } = {};
   let activeSub = fallbackSub;
-  let activeCat: VocabCategory = defaultCategory;
-  let activeLevel: TopikLevel = defaultTopikLevel;
+  let activeCat: VocabCategory = isDefaultDrama ? 'custom' : defaultCategory;
+  let activeLevel: TopikLevel = isDefaultDrama ? 'Drama' : defaultTopikLevel;
+  let currentDramaShow =
+    isDefaultDrama && !isGenericDramaSub(fallbackSub) ? fallbackSub : '';
 
   const tryParseHeaderLine = (line: string): boolean => {
     const low = line.toLowerCase();
@@ -529,15 +593,31 @@ export function parseVocabCsv(
     const rawLine = lines[i].replace(/^\uFEFF/, '').trim();
     if (!rawLine || isTableSeparator(rawLine)) continue;
 
-    // Handle markdown topic headings (# Lektion 1, ## Unterkategorie, ### Verben)
+    // Handle markdown topic headings (# Lektion 1, ## Unterkategorie, ### Verben, # @drama: Title)
     if (rawLine.startsWith('#')) {
+      if (/^#+\s*@drama:/i.test(rawLine)) {
+        const explicitDrama = cleanDramaTitle(rawLine.replace(/^#+\s*@drama:\s*/i, ''));
+        if (explicitDrama) {
+          currentDramaShow = explicitDrama;
+          activeSub = explicitDrama;
+        }
+        activeLevel = 'Drama';
+        activeCat = 'custom';
+        continue;
+      }
+
+      const hashCount = (rawLine.match(/^#+/) || ['#'])[0].length;
       const heading = rawLine.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
       if (heading) {
         const low = heading.toLowerCase();
-        if (low.includes('topik 1') || low.includes('topik i') || low.includes('topik1')) {
-          activeLevel = 'TOPIK I';
-        } else if (low.includes('topik 2') || low.includes('topik ii') || low.includes('topik2')) {
-          activeLevel = 'TOPIK II';
+        if (low.includes('drama') || low.includes('k-drama') || low.includes('kdrama')) {
+          activeLevel = 'Drama';
+        } else if (!isDefaultDrama) {
+          if (low.includes('topik 1') || low.includes('topik i') || low.includes('topik1')) {
+            activeLevel = 'TOPIK I';
+          } else if (low.includes('topik 2') || low.includes('topik ii') || low.includes('topik2')) {
+            activeLevel = 'TOPIK II';
+          }
         }
 
         const directPos = isPartOfSpeechValue(heading);
@@ -559,14 +639,26 @@ export function parseVocabCsv(
             activeCat = 'noun';
           }
 
-          // Clean heading to use as subcategory (remove pure level/POS suffixes if combined)
-          const cleanedTopic = heading
-            .replace(/\b(topik\s*(i|ii|1|2))\b/gi, '')
-            .replace(/^[\s\-:–—|]+|[\s\-:–—|]+$/g, '')
-            .trim();
+          if (isDefaultDrama || activeLevel === 'Drama') {
+            // In Drama mode, only top-level # headings (H1) that aren't generic POS/section labels set the show name
+            // if no single-file show name is locked yet
+            const candidateDrama = cleanDramaTitle(heading);
+            if (hashCount === 1 && candidateDrama && !isGenericDramaSub(candidateDrama)) {
+              if (!cleanedDefaultDrama || isGenericDramaSub(cleanedDefaultDrama)) {
+                currentDramaShow = candidateDrama;
+              }
+              activeSub = currentDramaShow || candidateDrama;
+            }
+          } else {
+            // Clean heading to use as subcategory (remove pure level/POS suffixes if combined)
+            const cleanedTopic = heading
+              .replace(/\b(topik\s*(i|ii|1|2))\b/gi, '')
+              .replace(/^[\s\-:–—|]+|[\s\-:–—|]+$/g, '')
+              .trim();
 
-          if (cleanedTopic && !isPartOfSpeechValue(cleanedTopic)) {
-            activeSub = cleanedTopic;
+            if (cleanedTopic && !isPartOfSpeechValue(cleanedTopic)) {
+              activeSub = cleanedTopic;
+            }
           }
         }
       }
@@ -755,14 +847,37 @@ export function parseVocabCsv(
 
     // Resolve TOPIK Level
     let resolvedLevel: TopikLevel = activeLevel;
-    if (levelStr) {
+    if (levelStr && !isDefaultDrama) {
       const lowLvl = levelStr.toLowerCase();
       if (lowLvl.includes('drama') || lowLvl.includes('kdrama') || lowLvl.includes('k-drama')) {
         resolvedLevel = 'Drama';
-      } else if (lowLvl.includes('2') || lowLvl.includes('ii') || lowLvl.includes('b1') || lowLvl.includes('b2')) {
+      } else if (/\b(topik\s*(2|ii)|2|ii|b1|b2)\b/i.test(lowLvl)) {
         resolvedLevel = 'TOPIK II';
-      } else if (lowLvl.includes('1') || lowLvl.includes('i') || lowLvl.includes('a1') || lowLvl.includes('a2')) {
+      } else if (/\b(topik\s*(1|i)|1|i|a1|a2)\b/i.test(lowLvl)) {
         resolvedLevel = 'TOPIK I';
+      }
+    }
+
+    const isDramaTarget =
+      isDefaultDrama ||
+      resolvedLevel === 'Drama' ||
+      String(defaultTopikLevel).toLowerCase().includes('drama') ||
+      String(activeLevel).toLowerCase().includes('drama');
+
+    // Drama items do NOT count towards general grammatical categories
+    if (isDramaTarget) {
+      resolvedLevel = 'Drama';
+      resolvedCat = 'custom';
+      if (currentDramaShow && !isGenericDramaSub(currentDramaShow)) {
+        resolvedSub = currentDramaShow;
+      } else if (!isGenericDramaSub(activeSub)) {
+        resolvedSub = activeSub;
+      } else if (!isGenericDramaSub(subStr)) {
+        resolvedSub = subStr;
+      } else if (fallbackSub && !isGenericDramaSub(fallbackSub)) {
+        resolvedSub = fallbackSub;
+      } else {
+        resolvedSub = cleanDramaTitle(resolvedSub) || 'K-Drama';
       }
     }
 
@@ -856,28 +971,44 @@ export async function saveMultipleVocabToCloud(
     }
   }
 
-  // 2. Fetch existing sharedVocab to match by Korean word (upsert without duplicates)
-  const existingByKr = new Map<string, string>();
+  // 2. Fetch existing sharedVocab to match by Korean word & scope (so Drama shows don't overwrite each other or TOPIK!)
+  const existingByKey = new Map<string, string>();
+  const existingPlainDramaByKr = new Map<string, string>();
   try {
     const existingSnap = await getDocs(collection(db, 'sharedVocab'));
     existingSnap.forEach((d) => {
       const data = d.data();
       if (data.korean && d.id) {
-        existingByKr.set(String(data.korean).trim(), d.id);
+        const kr = String(data.korean).trim();
+        const lvl = String(data.topikLevel || 'TOPIK I').trim();
+        const sub = String(data.subcategory || 'Allgemein').trim();
+        const isDr = lvl.toLowerCase().includes('drama') || String(data.category || '').toLowerCase().includes('drama');
+        const scopeKey = isDr ? `Drama::${sub}::${kr}` : `${lvl}::${kr}`;
+        existingByKey.set(scopeKey, d.id);
+        if (isDr && isGenericDramaSub(sub)) {
+          existingPlainDramaByKr.set(kr, d.id);
+        }
       }
     });
   } catch {
     // ignore if offline
   }
 
-  // Also deduplicate within the uploaded batch itself by Korean word
+  // Also deduplicate within the uploaded batch itself by scoped key (Show + Korean word for Drama)
   const seenInBatch = new Map<string, VocabItem>();
   items.forEach((item) => {
     const krKey = item.kr.trim();
     if (!krKey) return;
-    const existingId = existingByKr.get(krKey) || seenInBatch.get(krKey)?.id || item.id;
+    const isDr = item.level === 'Drama' || String(topikLevel).toLowerCase().includes('drama');
+    const subKey = (item.sub || 'K-Drama').trim();
+    const batchKey = isDr ? `Drama::${subKey}::${krKey}` : `${item.level || topikLevel}::${krKey}`;
+    const existingId =
+      existingByKey.get(batchKey) ||
+      (isDr ? existingPlainDramaByKr.get(krKey) : undefined) ||
+      seenInBatch.get(batchKey)?.id ||
+      item.id;
     const safeId = existingId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
-    seenInBatch.set(krKey, { ...item, id: safeId });
+    seenInBatch.set(batchKey, { ...item, id: safeId });
   });
 
   const finalItems: VocabItem[] = Array.from(seenInBatch.values());
@@ -1279,7 +1410,50 @@ export async function syncAllToCloud(
 }
 
 /**
- * Load all global shared vocabulary for the entire app (/sharedVocab),
+ * Convert a list of vocabulary items (by subcategory) to K-Drama mode in Firebase Cloud
+ */
+export async function convertItemsToDramaInCloud(
+  itemsToConvert: VocabItem[],
+  dramaTitle?: string
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || itemsToConvert.length === 0) return;
+
+  const now = new Date().toISOString();
+  const chunkSize = 400;
+  for (let i = 0; i < itemsToConvert.length; i += chunkSize) {
+    const batch = writeBatch(db);
+    const chunk = itemsToConvert.slice(i, i + chunkSize);
+    chunk.forEach((item) => {
+      const safeId = (item.id || `c_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
+      const ref = doc(db, `sharedVocab/${safeId}`);
+      const sub = dramaTitle || cleanDramaTitle(item.sub) || item.sub || 'K-Drama';
+      batch.set(ref, {
+        id: safeId,
+        userId: user.uid,
+        korean: String(item.kr || '').trim().slice(0, 450),
+        german: String(item.de || item.en || '').trim().slice(0, 950),
+        english: String(item.en || '').trim().slice(0, 950),
+        hanja: String(item.hanja || '').trim().slice(0, 250),
+        category: 'custom',
+        subcategory: String(sub).trim().slice(0, 250),
+        topikLevel: 'Drama',
+        exampleKorean: String(item.exKr || '').trim().slice(0, 1900),
+        exampleGerman: String(item.exDe || '').trim().slice(0, 1900),
+        exampleEnglish: String(item.exEn || '').trim().slice(0, 1900),
+        createdAt: now,
+      });
+    });
+    try {
+      await batch.commit();
+    } catch (err) {
+      console.warn('Could not update drama items in cloud:', err);
+    }
+  }
+}
+
+/**
+ * Load all global shared vocabulary for the entire app (/sharedVocab & /sharedVocabFiles),
  * and load the INDIVIDUAL user's SRS progress from /users/{userId}/srsProgress.
  */
 export async function loadAllFromCloud(): Promise<{
@@ -1297,17 +1471,29 @@ export async function loadAllFromCloud(): Promise<{
     const sharedSnap = await getDocs(collection(db, 'sharedVocab'));
     sharedSnap.forEach((d) => {
       const data = d.data();
-      const rawCat = normalizeCategory(data.category, 'noun');
-      const cat = refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
+      const isDrama = Boolean(
+        (data.topikLevel && String(data.topikLevel).toLowerCase().includes('drama')) ||
+        (data.category && String(data.category).toLowerCase().includes('drama'))
+      );
+      const rawCat = isDrama ? 'custom' : normalizeCategory(data.category, 'noun');
+      const cat = isDrama ? 'custom' : refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
+      const level: TopikLevel = isDrama
+        ? 'Drama'
+        : data.topikLevel === 'TOPIK II' || String(data.topikLevel || '').includes('2') || String(data.topikLevel || '').toLowerCase().includes('b1')
+        ? 'TOPIK II'
+        : 'TOPIK I';
+      const subName = isDrama
+        ? cleanDramaTitle(data.subcategory || '') || data.subcategory || 'K-Drama'
+        : data.subcategory || 'Import';
       customVocab.push({
-        id: data.id,
+        id: data.id || d.id,
         kr: data.korean,
         de: data.german,
         en: data.english || undefined,
         hanja: data.hanja || undefined,
         cat,
-        sub: data.subcategory || 'Import',
-        level: (data.topikLevel as TopikLevel) || 'TOPIK I',
+        sub: subName,
+        level,
         exKr: data.exampleKorean || undefined,
         exDe: data.exampleGerman || undefined,
         exEn: data.exampleEnglish || undefined,
@@ -1324,17 +1510,29 @@ export async function loadAllFromCloud(): Promise<{
     userVocabSnap.forEach((d) => {
       const data = d.data();
       if (!customVocab.some((v) => v.id === data.id || (v.kr === data.korean && v.de === data.german))) {
-        const rawCat = normalizeCategory(data.category, 'noun');
-        const cat = refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
+        const isDrama = Boolean(
+          (data.topikLevel && String(data.topikLevel).toLowerCase().includes('drama')) ||
+          (data.category && String(data.category).toLowerCase().includes('drama'))
+        );
+        const rawCat = isDrama ? 'custom' : normalizeCategory(data.category, 'noun');
+        const cat = isDrama ? 'custom' : refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
+        const level: TopikLevel = isDrama
+          ? 'Drama'
+          : data.topikLevel === 'TOPIK II' || String(data.topikLevel || '').includes('2') || String(data.topikLevel || '').toLowerCase().includes('b1')
+          ? 'TOPIK II'
+          : 'TOPIK I';
+        const subName = isDrama
+          ? cleanDramaTitle(data.subcategory || '') || data.subcategory || 'K-Drama'
+          : data.subcategory || 'Import';
         customVocab.push({
-          id: data.id,
+          id: data.id || d.id,
           kr: data.korean,
           de: data.german,
           en: data.english || undefined,
           hanja: data.hanja || undefined,
           cat,
-          sub: data.subcategory || 'Import',
-          level: (data.topikLevel as TopikLevel) || 'TOPIK I',
+          sub: subName,
+          level,
           exKr: data.exampleKorean || undefined,
           exDe: data.exampleGerman || undefined,
           exEn: data.exampleEnglish || undefined,
@@ -1344,6 +1542,97 @@ export async function loadAllFromCloud(): Promise<{
     });
   } catch {
     // ignore
+  }
+
+  // 1b. Reconstruct & heal K-Drama lists from uploaded files (/sharedVocabFiles & /users/{uid}/vocabFiles)
+  // This ensures that any uploaded Drama files always appear with their true K-Drama series title and 'Drama' level!
+  try {
+    const allFiles: VocabFileRecord[] = [];
+    const fileSnap = await getDocs(collection(db, 'sharedVocabFiles'));
+    fileSnap.forEach((d) => {
+      const data = d.data();
+      allFiles.push({ ...data, id: d.id || data.id } as VocabFileRecord);
+    });
+    try {
+      const userFileSnap = await getDocs(collection(db, `users/${user.uid}/vocabFiles`));
+      userFileSnap.forEach((d) => {
+        const data = d.data();
+        const rec = { ...data, id: d.id || data.id } as VocabFileRecord;
+        if (!allFiles.some((f) => f.id === rec.id)) {
+          allFiles.push(rec);
+        }
+      });
+    } catch {
+      // ignore
+    }
+
+    const itemsToHealInCloud: VocabItem[] = [];
+
+    for (const file of allFiles) {
+      if (!file.content) continue;
+      const isDramaFile =
+        String(file.topikLevel || '').toLowerCase().includes('drama') ||
+        String(file.fileName || '').toLowerCase().includes('drama') ||
+        /^#+\s*@drama:/im.test(file.content);
+
+      if (!isDramaFile) continue;
+
+      const fallbackShow = cleanDramaTitle(file.fileName || '') || 'K-Drama';
+      const parsedFromDramaFile = parseVocabCsv(file.content, 'Drama', fallbackShow, 'custom');
+
+      parsedFromDramaFile.forEach((dramaItem) => {
+        const krTrim = dramaItem.kr.trim();
+        if (!krTrim) return;
+
+        // Check if this Drama item is already in customVocab
+        const existingDramaIdx = customVocab.findIndex(
+          (v) =>
+            v.kr.trim() === krTrim &&
+            (v.level === 'Drama' || v.sub === dramaItem.sub || isGenericDramaSub(v.sub))
+        );
+
+        if (existingDramaIdx !== -1) {
+          const existing = customVocab[existingDramaIdx];
+          const needsHeal =
+            existing.level !== 'Drama' ||
+            existing.cat !== 'custom' ||
+            (isGenericDramaSub(existing.sub) && !isGenericDramaSub(dramaItem.sub));
+
+          if (needsHeal) {
+            const healed: VocabItem = {
+              ...existing,
+              level: 'Drama',
+              cat: 'custom',
+              sub: !isGenericDramaSub(dramaItem.sub) ? dramaItem.sub : existing.sub || fallbackShow,
+            };
+            customVocab[existingDramaIdx] = healed;
+            itemsToHealInCloud.push(healed);
+          }
+        } else {
+          // Not yet present as a Drama item (or only present in TOPIK I/II) -> add to Drama deck!
+          const newId = `drama_${(dramaItem.sub || fallbackShow).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}_${krTrim}`.replace(
+            /[^a-zA-Z0-9_-]/g,
+            '_'
+          ).slice(0, 120);
+          const added: VocabItem = {
+            ...dramaItem,
+            id: newId,
+            level: 'Drama',
+            cat: 'custom',
+            sub: dramaItem.sub || fallbackShow,
+            custom: true,
+          };
+          customVocab.push(added);
+          itemsToHealInCloud.push(added);
+        }
+      });
+    }
+
+    if (itemsToHealInCloud.length > 0) {
+      convertItemsToDramaInCloud(itemsToHealInCloud).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('Drama file reconstruction check:', err);
   }
 
   // 2. Load INDIVIDUAL user's SRS progress

@@ -42,6 +42,8 @@ import {
   deleteSingleVocabFromCloud,
   clearAllCustomVocabFromCloud,
   saveSingleSrsToCloud,
+  isDramaVocab,
+  convertItemsToDramaInCloud,
 } from './services/vocabDatabase';
 import { SyncModalTab } from './components/SyncModal';
 import { SojuSelection } from './utils/sojuRandomizer';
@@ -108,6 +110,10 @@ export default function App() {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
+      }
+      const metaTheme = document.getElementById('app-theme-color');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', theme === 'dark' ? '#181716' : '#F7F4EF');
       }
     } catch (e) {
       console.warn('localStorage error', e);
@@ -254,26 +260,28 @@ export default function App() {
   // Combine items per TOPIK level (base datasets + static /src/data/*.md files + custom uploaded vocab)
   const topik1AllItems = useMemo<VocabItem[]>(() => {
     const mdItems = loadAllMarkdownFilesVocab().filter(
-      (item) => item.level === 'TOPIK I'
+      (item) => item.level === 'TOPIK I' && !isDramaVocab(item)
     );
-    const customs = customVocab.filter((item) => item.level === 'TOPIK I');
+    const customs = customVocab.filter(
+      (item) => item.level === 'TOPIK I' && !isDramaVocab(item)
+    );
     return [...rawDataTopik1, ...mdItems, ...customs];
   }, [customVocab]);
 
   const topik2AllItems = useMemo<VocabItem[]>(() => {
     const mdItems = loadAllMarkdownFilesVocab().filter(
-      (item) => item.level === 'TOPIK II' || (!item.level && item.level !== 'Drama' && item.level !== 'TOPIK I')
+      (item) => (item.level === 'TOPIK II' || !item.level) && !isDramaVocab(item)
     );
     const customs = customVocab.filter(
-      (item) => item.level === 'TOPIK II' || (!item.level && item.level !== 'Drama' && item.level !== 'TOPIK I')
+      (item) => (item.level === 'TOPIK II' || !item.level) && !isDramaVocab(item)
     );
     return [...rawDataTopik2, ...mdItems, ...customs];
   }, [customVocab]);
 
   // Drama exclusive items: only shown in Drama mode
   const dramaAllItems = useMemo<VocabItem[]>(() => {
-    const mdItems = loadAllMarkdownFilesVocab().filter((item) => item.level === 'Drama');
-    const customs = customVocab.filter((item) => item.level === 'Drama');
+    const mdItems = loadAllMarkdownFilesVocab().filter((item) => isDramaVocab(item));
+    const customs = customVocab.filter((item) => isDramaVocab(item));
     return [...DRAMA_VOCAB_ITEMS, ...mdItems, ...customs];
   }, [customVocab]);
 
@@ -342,17 +350,18 @@ export default function App() {
     setDeckOrder([]);
   }, [bunnyDeck.length, bunnySourcePool]);
 
-  // Counts for Category buttons
+  // Counts for Category buttons: Drama vocabulary strictly excluded from grammatical categories
   const counts = useMemo(() => {
-    const noun = allLevelItems.filter((i) => i.cat === 'noun').length;
-    const verb = allLevelItems.filter((i) => i.cat === 'verb').length;
-    const adjective = allLevelItems.filter((i) => i.cat === 'adjective').length;
-    const adverb = allLevelItems.filter((i) => i.cat === 'adverb').length;
-    const phrase = allLevelItems.filter((i) => i.cat === 'phrase').length;
-    const grammar = allLevelItems.filter((i) => i.cat === 'grammar').length;
+    const regularItems = allLevelItems.filter((i) => !isDramaVocab(i));
+    const noun = regularItems.filter((i) => i.cat === 'noun').length;
+    const verb = regularItems.filter((i) => i.cat === 'verb').length;
+    const adjective = regularItems.filter((i) => i.cat === 'adjective').length;
+    const adverb = regularItems.filter((i) => i.cat === 'adverb').length;
+    const phrase = regularItems.filter((i) => i.cat === 'phrase').length;
+    const grammar = regularItems.filter((i) => i.cat === 'grammar').length;
     const custom = allLevelItems.filter((i) => i.custom === true).length;
     return {
-      all: allLevelItems.length,
+      all: allLevelItems.length, // Gesamtzahl contains all!
       noun,
       verb,
       adjective,
@@ -363,14 +372,14 @@ export default function App() {
     };
   }, [allLevelItems]);
 
-  // Normalize legacy 'custom' category filter to 'all'
+  // Normalize legacy 'custom' category filter to 'all', and force 'all' in Drama mode
   useEffect(() => {
-    if (category === 'custom') {
+    if (category === 'custom' || (specialPlayMode === 'drama' && category !== 'all')) {
       setCategory('all');
     }
-  }, [category]);
+  }, [category, specialPlayMode]);
 
-  // All subcategories available in the current TOPIK level
+  // All subcategories available in the current TOPIK level or Drama mode
   const availableSubcategories = useMemo(() => {
     const subs = Array.from(
       new Set(allLevelItems.map((i) => (i.sub && i.sub.trim() ? i.sub.trim() : 'Allgemein')))
@@ -378,8 +387,9 @@ export default function App() {
     return subs;
   }, [allLevelItems]);
 
-  // Reset subcategory if not in available list
+  // Reset subcategory only if available list is non-empty and selected subcategory is missing
   useEffect(() => {
+    if (availableSubcategories.length === 0) return;
     if (subcategory !== 'all' && !availableSubcategories.includes(subcategory)) {
       setSubcategory('all');
     }
@@ -481,9 +491,17 @@ export default function App() {
     setCustomVocab((prev) => {
       const merged = [...prev];
       newItems.forEach((item) => {
-        const existingIndex = merged.findIndex(
-          (m) => m.id === item.id || m.kr.trim() === item.kr.trim()
-        );
+        const isItemDrama = isDramaVocab(item) || targetLevel === 'Drama';
+        const existingIndex = merged.findIndex((m) => {
+          if (m.id === item.id) return true;
+          if (m.kr.trim() !== item.kr.trim()) return false;
+          const isExistingDrama = isDramaVocab(m);
+          if (isItemDrama !== isExistingDrama) return false;
+          if (isItemDrama) {
+            return (m.sub || '').trim() === (item.sub || '').trim();
+          }
+          return m.level === item.level;
+        });
         if (existingIndex !== -1) {
           // Update existing item in-place (preserving original ID so SRS progress stays intact!)
           merged[existingIndex] = {
@@ -506,6 +524,30 @@ export default function App() {
       setTopikLevel(targetLevel);
     }
   };
+
+  const handleConvertSubcategoryToDrama = useCallback((subName: string) => {
+    const trimmedTarget = subName.trim();
+    if (!trimmedTarget) return;
+    setCustomVocab((prev) => {
+      const toConvert: VocabItem[] = [];
+      const next = prev.map((item) => {
+        if ((item.sub || '').trim() === trimmedTarget) {
+          const updated: VocabItem = {
+            ...item,
+            level: 'Drama',
+            cat: 'custom',
+          };
+          toConvert.push(updated);
+          return updated;
+        }
+        return item;
+      });
+      if (toConvert.length > 0) {
+        convertItemsToDramaInCloud(toConvert, trimmedTarget).catch(() => {});
+      }
+      return next;
+    });
+  }, []);
 
   const handleClearCustom = async () => {
     if (customVocab.length === 0) return;
@@ -676,7 +718,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-hanji text-ink transition-colors duration-200 flex flex-col px-4 pt-3 pb-24 md:px-6 md:pt-4 md:pb-8 max-w-5xl mx-auto select-none relative font-sans">
+    <div className="safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans">
+      {/* iOS Top Status Bar / Dynamic Island Safe-Area Backdrop */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 h-[env(safe-area-inset-top,0px)] bg-hanji/95 backdrop-blur-md z-40 pointer-events-none"
+        aria-hidden="true"
+      />
+
       {/* STREAMLINED HEADER WITH PROGRESSIVE DISCLOSURE */}
       <header className="space-y-2">
         {/* TOP BAR: 3 Zones (Brand | Desktop Mode Nav | Primary Controls & Extras Drawer Trigger) */}
@@ -916,6 +964,7 @@ export default function App() {
             }}
             onShuffle={handleShuffle}
             lang={language}
+            isDramaMode={specialPlayMode === 'drama'}
           />
 
           {/* Interactive SRS Metrics (Clicking "due" toggles onlyDue filter directly) */}
@@ -977,16 +1026,48 @@ export default function App() {
 
             <div className="flex items-center gap-1.5 shrink-0">
               {specialPlayMode === 'drama' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    hapticTap();
-                    setIsDramaModalOpen(true);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] transition"
-                >
-                  {language === 'kr' ? '채널 변경' : 'Serie wählen'}
-                </button>
+                <>
+                  {availableSubcategories.length > 0 && (
+                    <select
+                      value={subcategory}
+                      onChange={(e) => {
+                        hapticTap();
+                        setSubcategory(e.target.value);
+                        setCurrentIndex(0);
+                        setIsFlipped(false);
+                        setDeckOrder([]);
+                      }}
+                      className="bg-card border border-border-card text-ink text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-obangBlue cursor-pointer max-w-[140px] sm:max-w-[190px] truncate"
+                      aria-label={language === 'kr' ? 'K-드라마 시리즈 선택' : 'K-Drama Serie auswählen'}
+                    >
+                      <option value="all">
+                        {language === 'kr'
+                          ? `전체 K-드라마 (${dramaAllItems.length})`
+                          : `Alle K-Dramas (${dramaAllItems.length})`}
+                      </option>
+                      {availableSubcategories.map((sub) => {
+                        const count = dramaAllItems.filter(
+                          (i) => (i.sub?.trim() || 'Allgemein') === sub
+                        ).length;
+                        return (
+                          <option key={sub} value={sub}>
+                            {sub} ({count})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticTap();
+                      setIsDramaModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] transition"
+                  >
+                    {language === 'kr' ? '채널 변경' : 'Serie wählen'}
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -1144,9 +1225,9 @@ export default function App() {
         )}
       </footer>
 
-      {/* MOBILE FIXED BOTTOM NAVIGATION BAR */}
+      {/* MOBILE FIXED BOTTOM NAVIGATION BAR (Respects iPhone 17 Pro Max Home Swipe Bar) */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border-card grid grid-cols-4 items-center h-16 px-2"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border-card grid grid-cols-4 items-center safe-bottom-nav"
         aria-label={language === 'kr' ? '모바일 하단 내비게이션' : 'Mobile Modus-Auswahl'}
       >
         <button
@@ -1241,7 +1322,7 @@ export default function App() {
           setIsSyncModalOpen(true);
         }}
         onOpenReset={() => setIsResetModalOpen(true)}
-        customCount={counts.custom}
+        customCount={customVocab.length}
       />
 
       {/* USER PROFILE & PROGRESS MODAL (Joseon Gat Scholar Profile) */}
@@ -1251,6 +1332,7 @@ export default function App() {
         currentLevel={topikLevel}
         topik1Items={topik1AllItems}
         topik2Items={topik2AllItems}
+        dramaItems={dramaAllItems}
         srsMap={srsMap}
         lang={language}
         onOpenSync={() => {
@@ -1326,12 +1408,9 @@ export default function App() {
         currentShowSub={specialPlayMode === 'drama' ? subcategory : 'all'}
         currentMode={viewMode}
         dramaItems={dramaAllItems}
+        otherCustomItems={customVocab.filter((i) => !isDramaVocab(i))}
         onStartDramaMode={handleStartDramaMode}
-        onOpenAddDrama={(tab) => {
-          setIsDramaModalOpen(false);
-          setSyncModalTab(tab);
-          setIsSyncModalOpen(true);
-        }}
+        onConvertSubcategoryToDrama={handleConvertSubcategoryToDrama}
       />
 
       {/* Bunny Mode / 토끼 모드 Modal */}

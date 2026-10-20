@@ -19,8 +19,8 @@ export const ResetModal: React.FC<ResetModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-hanji border border-border-card rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4 animate-pop">
+    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50">
+      <div className="bg-hanji border border-border-card rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4 animate-pop safe-modal-panel overflow-y-auto">
         <div className="flex items-center gap-2.5 text-dancheong">
           <AlertTriangle className="w-5 h-5 shrink-0" />
           <h3 className="font-bold text-base text-ink">{t.resetModal.title}</h3>

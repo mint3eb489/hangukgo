@@ -85,8 +85,8 @@ export const RamyeonTimerModal: React.FC<RamyeonTimerModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-hanji border border-border-card rounded-2xl max-w-md w-full p-6 shadow-xl space-y-5 animate-pop">
+    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50">
+      <div className="bg-hanji border border-border-card rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-5 animate-pop safe-modal-panel overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-card pb-3">
           <div className="flex items-center gap-2.5">
@@ -254,7 +254,7 @@ export const RamyeonFloatingWidget: React.FC<RamyeonFloatingWidgetProps> = ({
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-20 md:bottom-5 right-4 md:right-5 z-40 hanji-card-elevated border-2 border-dancheong rounded-full px-3.5 py-2 flex items-center gap-2.5 hover:scale-105 transition-transform duration-200 group text-ink ring-2 ring-dancheong/20"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-5 right-4 md:right-5 z-40 hanji-card-elevated border-2 border-dancheong rounded-full px-3.5 py-2 flex items-center gap-2.5 hover:scale-105 transition-transform duration-200 group text-ink ring-2 ring-dancheong/20"
       title={t.ramyeonModal.widgetTooltip(formatTime(timeLeft))}
     >
       <RamyeonPacketIcon className="w-5 h-5 shrink-0" idPrefix="floating-widget" />

@@ -42,6 +42,7 @@ interface DeckFilterPopoverProps {
   onToggleDirection: () => void;
   onShuffle: () => void;
   lang: AppLanguage;
+  isDramaMode?: boolean;
 }
 
 export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
@@ -63,6 +64,7 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
   onToggleDirection,
   onShuffle,
   lang,
+  isDramaMode = false,
 }) => {
   const t = translations[lang];
   const isKr = lang === 'kr';
@@ -162,50 +164,65 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
 
           {/* 1. Grammatical Category (Wortart) Menu */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-muted block">
-              {isKr ? '품사 (Wortart)' : 'Kategorie (Wortart)'}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5">
-              {(
-                [
-                  { id: 'all', label: t.categories.all, count: categoryCounts?.all },
-                  { id: 'noun', label: t.categories.noun, count: categoryCounts?.noun },
-                  { id: 'verb', label: t.categories.verb, count: categoryCounts?.verb },
-                  { id: 'adjective', label: t.categories.adjective, count: categoryCounts?.adjective },
-                  { id: 'adverb', label: t.categories.adverb, count: categoryCounts?.adverb },
-                  { id: 'phrase', label: t.categories.phrase, count: categoryCounts?.phrase },
-                  { id: 'grammar', label: t.categories.grammar, count: categoryCounts?.grammar },
-                ] as const
-              ).map((cat) => {
-                const active =
-                  category === cat.id || (cat.id === 'all' && category === 'custom');
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      hapticTap();
-                      onSelectCategory(cat.id as CategoryFilter);
-                    }}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-1.5 border ${
-                      active
-                        ? 'bg-ink text-hanji border-ink shadow-2xs'
-                        : 'bg-surface text-ink border-border-card hover:bg-stone-200 dark:hover:bg-stone-700/60'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 truncate">
-                      {active && <Check className="w-3.5 h-3.5 shrink-0" />}
-                      <span className="truncate">{cat.label}</span>
-                    </span>
-                    {typeof cat.count === 'number' && (
-                      <span className="opacity-75 font-mono text-[10px] shrink-0">
-                        {cat.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-muted block">
+                {isKr ? '품사 (Wortart)' : 'Kategorie (Wortart)'}
+              </label>
+              {isDramaMode && (
+                <span className="text-[10px] text-muted font-medium">
+                  {isKr ? '드라마 모드 비활성화' : 'im Drama-Modus inaktiv'}
+                </span>
+              )}
             </div>
+
+            {isDramaMode ? (
+              <div className="p-2.5 rounded-xl bg-obangBlue/10 border border-obangBlue/25 text-xs text-obangBlue font-medium flex items-center justify-between">
+                <span>{isKr ? '🎬 K-드라마 전용 어휘' : '🎬 K-Drama Serien-Mix'}</span>
+                <span className="font-mono font-bold">{categoryCounts?.all || 0} {isKr ? '단어' : 'Vokabeln'}</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5">
+                {(
+                  [
+                    { id: 'all', label: t.categories.all, count: categoryCounts?.all },
+                    { id: 'noun', label: t.categories.noun, count: categoryCounts?.noun },
+                    { id: 'verb', label: t.categories.verb, count: categoryCounts?.verb },
+                    { id: 'adjective', label: t.categories.adjective, count: categoryCounts?.adjective },
+                    { id: 'adverb', label: t.categories.adverb, count: categoryCounts?.adverb },
+                    { id: 'phrase', label: t.categories.phrase, count: categoryCounts?.phrase },
+                    { id: 'grammar', label: t.categories.grammar, count: categoryCounts?.grammar },
+                  ] as const
+                ).map((cat) => {
+                  const active =
+                    category === cat.id || (cat.id === 'all' && category === 'custom');
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        hapticTap();
+                        onSelectCategory(cat.id as CategoryFilter);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-1.5 border ${
+                        active
+                          ? 'bg-ink text-hanji border-ink shadow-2xs'
+                          : 'bg-surface text-ink border-border-card hover:bg-stone-200 dark:hover:bg-stone-700/60'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="truncate">{cat.label}</span>
+                      </span>
+                      {typeof cat.count === 'number' && (
+                        <span className="opacity-75 font-mono text-[10px] shrink-0">
+                          {cat.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* 2. Subcategory / Topic Menu List */}
@@ -213,7 +230,15 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-semibold text-muted flex items-center gap-1.5">
                 <FolderOpen className="w-3.5 h-3.5 text-celadon" />
-                <span>{isKr ? '세부 주제 (Unterkategorie)' : 'Unterkategorie'}</span>
+                <span>
+                  {isDramaMode
+                    ? isKr
+                      ? 'K-드라마 시리즈'
+                      : 'K-Drama Serie / Liste'
+                    : isKr
+                    ? '세부 주제 (Unterkategorie)'
+                    : 'Unterkategorie'}
+                </span>
               </label>
               {subcategory !== 'all' && (
                 <button
