@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="skyGrad" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A242F" />
+      <stop offset="100%" stop-color="#0B1217" />
+    </linearGradient>
+    <linearGradient id="mountainGrad1" x1="256" y1="220" x2="256" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5E856E" />
+      <stop offset="100%" stop-color="#283C31" />
+    </linearGradient>
+    <linearGradient id="mountainGrad2" x1="256" y1="280" x2="256" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B5978" />
+      <stop offset="100%" stop-color="#1B2B3A" />
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E85D4E" />
+      <stop offset="100%" stop-color="#B83A2E" />
+    </radialGradient>
+    <radialGradient id="moonGlow" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="85%" stop-color="#ECE6DC" />
+      <stop offset="100%" stop-color="#D5CEBF" />
+    </radialGradient>
+  </defs>
+
+  <!-- Joseon Canvas Background with rounded squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#skyGrad)" />
+
+  <!-- Gold Imperial Border -->
+  <rect x="20" y="20" width="472" height="472" rx="96" fill="none" stroke="#D49B54" stroke-width="8" stroke-dasharray="24 12" opacity="0.75" />
+
+  <!-- Silvery-White Moon (Left / Wol - 월) -->
+  <circle cx="120" cy="140" r="48" fill="url(#moonGlow)" stroke="#D5D0C7" stroke-width="6" />
+
+  <!-- Crimson Red Sun (Right / Il - 일) -->
+  <circle cx="392" cy="140" r="50" fill="url(#sunGlow)" stroke="#E5A962" stroke-width="8" />
+  <circle cx="392" cy="140" r="68" fill="none" stroke="#D49B54" stroke-width="4" stroke-dasharray="8 8" opacity="0.7" />
+
+  <!-- Background Mountains (The 5 Peaks / 일월오봉도) -->
+  <!-- Left Peak -->
+  <polygon points="30,480 130,250 230,480" fill="url(#mountainGrad1)" opacity="0.95" />
+  <!-- Right Peak -->
+  <polygon points="282,480 382,250 482,480" fill="url(#mountainGrad1)" opacity="0.95" />
+  <!-- Center Majestic High Peak -->
+  <polygon points="140,480 256,190 372,480" fill="url(#mountainGrad1)" />
+
+  <!-- Foreground Mountain Ridges -->
+  <polygon points="85,480 200,290 315,480" fill="url(#mountainGrad2)" />
+  <polygon points="197,480 312,290 427,480" fill="url(#mountainGrad2)" />
+
+  <!-- Stylized Joseon Mountain Ridge Contours (Gold Ocker) -->
+  <path d="M256 190 L256 480" stroke="#E5BD78" stroke-width="6" stroke-dasharray="10 8" opacity="0.85" />
+  <path d="M130 250 L130 480" stroke="#D49B54" stroke-width="5" opacity="0.75" />
+  <path d="M382 250 L382 480" stroke="#D49B54" stroke-width="5" opacity="0.75" />
+  <path d="M200 290 L200 480" stroke="#C58E48" stroke-width="5" opacity="0.75" />
+  <path d="M312 290 L312 480" stroke="#C58E48" stroke-width="5" opacity="0.75" />
+
+  <!-- Traditional Wave / Cloud Accents at bottom -->
+  <path d="M40 450 Q80 430 120 450 T200 450 T280 450 T360 450 T440 450 T480 450" fill="none" stroke="#D49B54" stroke-width="4" opacity="0.5" />
+</svg>

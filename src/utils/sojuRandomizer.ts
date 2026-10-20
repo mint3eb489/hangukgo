@@ -2,8 +2,10 @@ import { VocabItem, VocabCategory } from '../data/vocabData';
 
 export type GameMode = 'card' | 'listening' | 'quiz';
 
+export type SojuCategory = 'all' | VocabCategory | 'custom';
+
 export interface SojuCombo {
-  category: 'all' | 'noun' | 'verb' | 'grammar' | 'custom';
+  category: SojuCategory;
   categoryLabel: string;
   subcategory: string;
   itemCount: number;
@@ -12,7 +14,7 @@ export interface SojuCombo {
 export interface SojuSelection {
   mode: GameMode;
   modeLabel: string;
-  category: 'all' | 'noun' | 'verb' | 'grammar' | 'custom';
+  category: SojuCategory;
   categoryLabel: string;
   subcategory: string;
   itemCount: number;
@@ -39,18 +41,24 @@ export const GAME_MODES: { id: GameMode; label: string; iconName: string; desc: 
   },
 ];
 
-export const CATEGORY_LABELS: Record<'all' | 'noun' | 'verb' | 'grammar' | 'custom', string> = {
+export const CATEGORY_LABELS: Record<SojuCategory, string> = {
   all: 'Alle Kategorien',
   noun: 'Nomen (명사)',
   verb: 'Verben (동사)',
+  adjective: 'Adjektive (형용사)',
+  adverb: 'Adverbien (부사)',
+  phrase: 'Ausdrücke (표현)',
   grammar: 'Grammatik (문법)',
   custom: 'Eigene / Markdown',
 };
 
-export const CATEGORY_LABELS_KR: Record<'all' | 'noun' | 'verb' | 'grammar' | 'custom', string> = {
+export const CATEGORY_LABELS_KR: Record<SojuCategory, string> = {
   all: '전체 카테고리',
   noun: '명사',
   verb: '동사',
+  adjective: '형용사',
+  adverb: '부사',
+  phrase: '표현',
   grammar: '문법',
   custom: '내 단어 / 마크다운',
 };

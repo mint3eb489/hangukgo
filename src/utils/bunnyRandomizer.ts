@@ -9,6 +9,9 @@ export interface BunnyHopResult {
   categoryBreakdown: {
     noun: number;
     verb: number;
+    adjective: number;
+    adverb: number;
+    phrase: number;
     grammar: number;
   };
 }
@@ -38,7 +41,14 @@ export function generateBunnyHopList(
       mode: randomMode,
       sourceSubcategories: [],
       totalAvailableLists: 0,
-      categoryBreakdown: { noun: 0, verb: 0, grammar: 0 },
+      categoryBreakdown: {
+        noun: 0,
+        verb: 0,
+        adjective: 0,
+        adverb: 0,
+        phrase: 0,
+        grammar: 0,
+      },
     };
   }
 
@@ -57,13 +67,20 @@ export function generateBunnyHopList(
   );
 
   // Organize items by category AND by subcategory so the bunny hops across every category & list
-  const categories: VocabCategory[] = ['noun', 'verb', 'grammar'];
+  const categories: VocabCategory[] = [
+    'noun',
+    'verb',
+    'adjective',
+    'adverb',
+    'phrase',
+    'grammar',
+  ];
   const pickedIds = new Set<string>();
   const pickedItems: VocabItem[] = [];
 
   const maxCount = Math.min(targetSize, pool.length);
 
-  // Pass 1: Ensure every present category (noun, verb, grammar) gets at least one hop right away
+  // Pass 1: Ensure every present category gets at least one hop right away
   for (const cat of shuffleArray(categories)) {
     if (pickedItems.length >= maxCount) break;
     const candidate = pool.find((item) => item.cat === cat && !pickedIds.has(item.id));
@@ -125,6 +142,9 @@ export function generateBunnyHopList(
   const categoryBreakdown = {
     noun: finalItems.filter((i) => i.cat === 'noun').length,
     verb: finalItems.filter((i) => i.cat === 'verb').length,
+    adjective: finalItems.filter((i) => i.cat === 'adjective').length,
+    adverb: finalItems.filter((i) => i.cat === 'adverb').length,
+    phrase: finalItems.filter((i) => i.cat === 'phrase').length,
     grammar: finalItems.filter((i) => i.cat === 'grammar').length,
   };
 

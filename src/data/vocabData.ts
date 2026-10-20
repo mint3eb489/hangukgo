@@ -1,5 +1,5 @@
-export type TopikLevel = 'TOPIK I' | 'TOPIK II';
-export type VocabCategory = 'noun' | 'verb' | 'grammar';
+export type TopikLevel = 'TOPIK I' | 'TOPIK II' | 'Drama';
+export type VocabCategory = 'noun' | 'verb' | 'adjective' | 'adverb' | 'phrase' | 'grammar';
 
 export interface VocabItem {
   id: string;

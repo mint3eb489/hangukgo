@@ -1,4 +1,5 @@
 import { VocabItem, VocabCategory, TopikLevel } from '../data/vocabData';
+import { inferWordCategory } from '../services/vocabDatabase';
 
 /**
  * Dynamically loads and parses any Markdown (.md) files placed inside /src/data.
@@ -27,24 +28,56 @@ export function parseMarkdownVocabContent(content: string, fallbackSub: string):
     const raw = line.trim();
     if (!raw) return;
 
-    // Detect H1 / H2 headers to set subcategory or level
+    // Detect H1 / H2 headers to set subcategory, category, or level
     if (raw.startsWith('#')) {
       const headerText = raw.replace(/^#+\s*/, '').trim();
-      if (headerText.toLowerCase().includes('topik 1') || headerText.toLowerCase().includes('topik i')) {
+      const lowerHeader = headerText.toLowerCase();
+
+      if (lowerHeader.includes('drama') || lowerHeader.includes('k-drama')) {
+        currentLevel = 'Drama';
+      } else if (lowerHeader.includes('topik 1') || lowerHeader.includes('topik i')) {
         currentLevel = 'TOPIK I';
-      } else if (headerText.toLowerCase().includes('topik 2') || headerText.toLowerCase().includes('topik ii')) {
+      } else if (lowerHeader.includes('topik 2') || lowerHeader.includes('topik ii')) {
         currentLevel = 'TOPIK II';
       }
-      if (headerText.toLowerCase().includes('verb') || headerText.toLowerCase().includes('동사')) {
+
+      if (
+        lowerHeader.includes('adjektiv') ||
+        lowerHeader.includes('adjective') ||
+        lowerHeader.includes('형용사')
+      ) {
+        currentCat = 'adjective';
+      } else if (lowerHeader.includes('adverb') || lowerHeader.includes('부사')) {
+        currentCat = 'adverb';
+      } else if (
+        lowerHeader.includes('ausdruck') ||
+        lowerHeader.includes('ausdrücke') ||
+        lowerHeader.includes('phrase') ||
+        lowerHeader.includes('redewendung') ||
+        lowerHeader.includes('표현') ||
+        lowerHeader.includes('관용구')
+      ) {
+        currentCat = 'phrase';
+      } else if (lowerHeader.includes('verb') || lowerHeader.includes('동사')) {
         currentCat = 'verb';
-      } else if (headerText.toLowerCase().includes('gramm') || headerText.toLowerCase().includes('문법')) {
+      } else if (
+        lowerHeader.includes('gramm') ||
+        lowerHeader.includes('문법') ||
+        lowerHeader.includes('partikel') ||
+        lowerHeader.includes('조사')
+      ) {
         currentCat = 'grammar';
-      } else if (headerText.toLowerCase().includes('nomen') || headerText.toLowerCase().includes('명사')) {
+      } else if (lowerHeader.includes('nomen') || lowerHeader.includes('명사')) {
         currentCat = 'noun';
       }
 
       // If header doesn't just specify category or level, use it as subcategory
-      const cleanHeader = headerText.replace(/\b(topik\s*(i|ii|1|2)?|nomen|verben|grammatik)\b/gi, '').trim();
+      const cleanHeader = headerText
+        .replace(
+          /\b(topik\s*(i|ii|1|2)?|nomen|verben|verb|adjektiv|adjektive|adverb|adverbien|ausdrücke|ausdruck|phrase|grammatik)\b/gi,
+          ''
+        )
+        .trim();
       if (cleanHeader) {
         currentSub = cleanHeader;
       }
@@ -107,8 +140,9 @@ export function parseMarkdownVocabContent(content: string, fallbackSub: string):
       }
     }
 
-    let cat: VocabCategory = currentCat;
-    if (kr.startsWith('-') || kr.startsWith('-(으)')) {
+    // Smartly determine category using inferWordCategory or header category
+    let cat: VocabCategory = inferWordCategory(kr, de, en, currentCat);
+    if (kr.startsWith('-') || kr.startsWith('-(으)') || kr.startsWith('~')) {
       cat = 'grammar';
     }
 

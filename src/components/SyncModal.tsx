@@ -136,6 +136,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       setActiveTab(initialTab);
       setSingleLevel(currentLevel);
       setBulkLevel(currentLevel);
+      if (currentLevel === 'Drama') {
+        setSingleSub(isKr ? '사랑의 불시착' : 'K-Drama');
+        setBulkSub(isKr ? '사랑의 불시착' : 'K-Drama');
+      }
       setFeedback(null);
       setAuthError(null);
 
@@ -495,6 +499,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const bulkPreviewCounts = {
     noun: bulkPreviewItems.filter((i) => i.cat === 'noun').length,
     verb: bulkPreviewItems.filter((i) => i.cat === 'verb').length,
+    adjective: bulkPreviewItems.filter((i) => i.cat === 'adjective').length,
+    adverb: bulkPreviewItems.filter((i) => i.cat === 'adverb').length,
+    phrase: bulkPreviewItems.filter((i) => i.cat === 'phrase').length,
     grammar: bulkPreviewItems.filter((i) => i.cat === 'grammar').length,
   };
 
@@ -622,7 +629,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     setFeedback(null);
     try {
       const fallbackSub = formatFileNameToSubcategory(file.fileName);
-      const level = (file.topikLevel === 'TOPIK II' ? 'TOPIK II' : 'TOPIK I') as TopikLevel;
+      const level = (
+        file.topikLevel === 'Drama'
+          ? 'Drama'
+          : file.topikLevel === 'TOPIK II'
+          ? 'TOPIK II'
+          : 'TOPIK I'
+      ) as TopikLevel;
       const items = parseVocabCsv(file.content, level, fallbackSub, 'noun');
       if (items.length === 0) {
         setFeedback({
@@ -973,8 +986,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     onChange={(e) => setSingleLevel(e.target.value as TopikLevel)}
                     className="w-full bg-card border border-border-card rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none focus:border-celadon"
                   >
-                    <option value="TOPIK I">TOPIK I</option>
-                    <option value="TOPIK II">TOPIK II</option>
+                    <option value="TOPIK I">TOPIK I (A1/A2)</option>
+                    <option value="TOPIK II">TOPIK II (B1/B2)</option>
+                    <option value="Drama">🎬 K-Drama Modus (Exklusiv)</option>
                   </select>
                 </div>
 
@@ -989,23 +1003,49 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   >
                     <option value="noun">{lang === 'kr' ? '명사 (Nomen)' : '명사 Nomen'}</option>
                     <option value="verb">{lang === 'kr' ? '동사 (Verben)' : '동사 Verben'}</option>
+                    <option value="adjective">{lang === 'kr' ? '형용사 (Adjektive)' : '형용사 Adjektive'}</option>
+                    <option value="adverb">{lang === 'kr' ? '부사 (Adverbien)' : '부사 Adverbien'}</option>
+                    <option value="phrase">{lang === 'kr' ? '표현 (Ausdrücke)' : '표현 Ausdrücke'}</option>
                     <option value="grammar">{lang === 'kr' ? '문법 (Grammatik)' : '문법 Grammatik'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-muted mb-1">
-                    {t.vocabModal.subcategoryName}
+                    {singleLevel === 'Drama'
+                      ? isKr
+                        ? '드라마 제목 (K-Drama)'
+                        : 'K-Drama Serie / Titel'
+                      : t.vocabModal.subcategoryName}
                   </label>
                   <input
                     type="text"
                     value={singleSub}
                     onChange={(e) => setSingleSub(e.target.value)}
-                    placeholder={isKr ? '예: 4과, 음식' : 'z. B. Lektion 4'}
+                    placeholder={
+                      singleLevel === 'Drama'
+                        ? isKr
+                          ? '예: 사랑의 불시착, 도깨비'
+                          : 'z. B. Goblin, Crash Landing on You'
+                        : isKr
+                        ? '예: 4과, 음식'
+                        : 'z. B. Lektion 4'
+                    }
                     className="w-full bg-card border border-border-card rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-celadon"
                   />
                 </div>
               </div>
+
+              {singleLevel === 'Drama' && (
+                <div className="p-2.5 bg-obangBlue/10 border border-obangBlue/30 rounded-xl text-xs text-obangBlue flex items-center gap-2 font-medium animate-fadeIn">
+                  <span className="text-base">📺</span>
+                  <span>
+                    {isKr
+                      ? '드라마 모드 전용: 이 단어는 일반 TOPIK 목록에 섞이지 않고, 오직 K-드라마 게임 모드에서만 실행됩니다.'
+                      : 'Exklusiv für K-Drama Modus: Diese Vokabel erscheint nicht in den normalen TOPIK-Listen, sondern ausschließlich im Drama-Spielmodus!'}
+                  </span>
+                </div>
+              )}
 
               {/* Korean Word & Hanja */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -1165,8 +1205,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     onChange={(e) => setBulkLevel(e.target.value as TopikLevel)}
                     className="w-full bg-card border border-border-card rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none focus:border-celadon"
                   >
-                    <option value="TOPIK I">TOPIK I</option>
-                    <option value="TOPIK II">TOPIK II</option>
+                    <option value="TOPIK I">TOPIK I (A1/A2)</option>
+                    <option value="TOPIK II">TOPIK II (B1/B2)</option>
+                    <option value="Drama">🎬 K-Drama Modus (Exklusiv)</option>
                   </select>
                 </div>
                 <div>
@@ -1178,24 +1219,50 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     onChange={(e) => setBulkCat(e.target.value as VocabCategory)}
                     className="w-full bg-card border border-border-card rounded-xl px-3 py-2 text-xs font-medium text-ink focus:outline-none focus:border-celadon"
                   >
-                    <option value="noun">{lang === 'kr' ? '명사' : '명사 Nomen'}</option>
-                    <option value="verb">{lang === 'kr' ? '동사' : '동사 Verben'}</option>
-                    <option value="grammar">{lang === 'kr' ? '문법' : '문법 Grammatik'}</option>
+                    <option value="noun">{lang === 'kr' ? '명사 (Nomen)' : '명사 Nomen'}</option>
+                    <option value="verb">{lang === 'kr' ? '동사 (Verben)' : '동사 Verben'}</option>
+                    <option value="adjective">{lang === 'kr' ? '형용사 (Adjektive)' : '형용사 Adjektive'}</option>
+                    <option value="adverb">{lang === 'kr' ? '부사 (Adverbien)' : '부사 Adverbien'}</option>
+                    <option value="phrase">{lang === 'kr' ? '표현 (Ausdrücke)' : '표현 Ausdrücke'}</option>
+                    <option value="grammar">{lang === 'kr' ? '문법 (Grammatik)' : '문법 Grammatik'}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-muted mb-1">
-                    {t.vocabModal.subcategoryName}
+                    {bulkLevel === 'Drama'
+                      ? isKr
+                        ? '드라마 제목 (K-Drama)'
+                        : 'K-Drama Serie / Titel'
+                      : t.vocabModal.subcategoryName}
                   </label>
                   <input
                     type="text"
                     value={bulkSub}
                     onChange={(e) => setBulkSub(e.target.value)}
-                    placeholder={isKr ? '예: 4과' : 'z. B. Lektion 4'}
+                    placeholder={
+                      bulkLevel === 'Drama'
+                        ? isKr
+                          ? '예: 사랑의 불시착, 도깨비'
+                          : 'z. B. Goblin, Crash Landing on You'
+                        : isKr
+                        ? '예: 4과'
+                        : 'z. B. Lektion 4'
+                    }
                     className="w-full bg-card border border-border-card rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-celadon"
                   />
                 </div>
               </div>
+
+              {bulkLevel === 'Drama' && (
+                <div className="p-2.5 bg-obangBlue/10 border border-obangBlue/30 rounded-xl text-xs text-obangBlue flex items-center gap-2 font-medium animate-fadeIn">
+                  <span className="text-base">📺</span>
+                  <span>
+                    {isKr
+                      ? '드라마 모드 전용 업로드: 이 파일의 모든 단어는 일반 TOPIK 목록에 섞이지 않고, 오직 K-드라마 게임 모드에서만 실행됩니다.'
+                      : 'Exklusiv für K-Drama Modus: Alle Vokabeln dieser Liste erscheinen nicht in den normalen TOPIK-Listen, sondern ausschließlich im Drama-Spielmodus!'}
+                  </span>
+                </div>
+              )}
 
               {/* File Upload Zone with Drag & Drop */}
               <input
@@ -1293,10 +1360,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         {isKr ? '개 단어 인식됨' : 'Vokabeln erkannt'}
                       </span>
                     </span>
-                    <span className="text-[11px] text-muted font-medium">
-                      명사 Nomen: <strong>{bulkPreviewCounts.noun}</strong> · 동사 Verben:{' '}
-                      <strong>{bulkPreviewCounts.verb}</strong> · 문법 Grammatik:{' '}
-                      <strong>{bulkPreviewCounts.grammar}</strong>
+                    <span className="text-[11px] text-muted font-medium flex flex-wrap gap-x-2">
+                      <span>명사 Nomen: <strong>{bulkPreviewCounts.noun}</strong></span>
+                      <span>· 동사 Verben: <strong>{bulkPreviewCounts.verb}</strong></span>
+                      <span>· 형용사 Adjektive: <strong>{bulkPreviewCounts.adjective}</strong></span>
+                      {bulkPreviewCounts.adverb > 0 && <span>· 부사 Adverbien: <strong>{bulkPreviewCounts.adverb}</strong></span>}
+                      {bulkPreviewCounts.phrase > 0 && <span>· 표현 Ausdrücke: <strong>{bulkPreviewCounts.phrase}</strong></span>}
+                      <span>· 문법 Grammatik: <strong>{bulkPreviewCounts.grammar}</strong></span>
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-celadon/20">

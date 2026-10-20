@@ -34,15 +34,46 @@ export function isPartOfSpeechValue(raw?: string): VocabCategory | null {
   if (!raw) return null;
   const c = raw.toLowerCase().trim();
   if (
-    c === 'verb' ||
-    c === 'verben' ||
-    c === 'v' ||
+    c === 'adjective' ||
+    c === 'adjectives' ||
     c === 'adjektiv' ||
     c === 'adjektive' ||
-    c === 'adjective' ||
     c === 'adj' ||
+    c === '형용사'
+  ) {
+    return 'adjective';
+  }
+  if (
+    c === 'adverb' ||
+    c === 'adverbs' ||
+    c === 'adverbien' ||
+    c === 'adv' ||
+    c === '부사'
+  ) {
+    return 'adverb';
+  }
+  if (
+    c === 'phrase' ||
+    c === 'phrases' ||
+    c === 'ausdruck' ||
+    c === 'ausdrücke' ||
+    c === 'redewendung' ||
+    c === 'redewendungen' ||
+    c === 'idiom' ||
+    c === 'satz' ||
+    c === 'sätze' ||
+    c === '표현' ||
+    c === '관용구' ||
+    c === '문장'
+  ) {
+    return 'phrase';
+  }
+  if (
+    c === 'verb' ||
+    c === 'verben' ||
+    c === 'verbs' ||
+    c === 'v' ||
     c === '동사' ||
-    c === '형용사' ||
     c === '동사/형용사'
   ) {
     return 'verb';
@@ -68,12 +99,7 @@ export function isPartOfSpeechValue(raw?: string): VocabCategory | null {
     c === 'substantiv' ||
     c === 'substantive' ||
     c === 'n' ||
-    c === 'adverb' ||
-    c === '부사' ||
-    c === '명사' ||
-    c === '표현' ||
-    c === 'ausdruck' ||
-    c === 'phrase'
+    c === '명사'
   ) {
     return 'noun';
   }
@@ -88,15 +114,52 @@ export function normalizeCategory(rawCat?: string, fallback: VocabCategory = 'no
   const exact = isPartOfSpeechValue(rawCat);
   if (exact) return exact;
   const c = rawCat.toLowerCase().trim();
-  if (c.includes('verb') || c.includes('adjektiv') || c.includes('동사') || c.includes('형용사')) return 'verb';
+  if (c.includes('adjektiv') || c.includes('adjective') || c.includes('형용사')) return 'adjective';
+  if (c.includes('adverb') || c.includes('부사')) return 'adverb';
+  if (c.includes('ausdruck') || c.includes('ausdrücke') || c.includes('phrase') || c.includes('redewendung') || c.includes('표현') || c.includes('관용구')) return 'phrase';
+  if (c.includes('verb') || c.includes('동사')) return 'verb';
   if (c.includes('gramm') || c.includes('문법') || c.includes('partikel') || c.includes('조사')) return 'grammar';
   if (c.includes('noun') || c.includes('nomen') || c.includes('substantiv') || c.includes('명사')) return 'noun';
   return fallback;
 }
 
+const KOREAN_ADJECTIVES = new Set<string>([
+  '좋다', '나쁘다', '크다', '작다', '많다', '적다', '길다', '짧다', '높다', '낮다',
+  '넓다', '좁다', '깊다', '얕다', '멀다', '가깝다', '빠르다', '느리다', '비싸다', '싸다',
+  '쉽다', '어렵다', '무겁다', '가볍다', '덥다', '춥다', '따뜻하다', '시원하다', '쌀쌀하다',
+  '예쁘다', '아름답다', '귀엽다', '멋있다', '잘생기다', '못생기다', '깨끗하다', '더럽다',
+  '조용하다', '시끄럽다', '밝다', '어둡다', '기쁘다', '슬프다', '행복하다', '불행하다',
+  '외롭다', '쓸쓸하다', '그립다', '부럽다', '부끄럽다', '창피하다', '무섭다', '두렵다',
+  '화나다', '답답하다', '섭섭하다', '억울하다', '속상하다', '미안하다', '고맙다', '감사하다',
+  '반갑다', '즐겁다', '재미있다', '재미없다', '맛있다', '맛없다', '달다', '쓰다', '짜다',
+  '맵다', '시다', '싱겁다', '고소하다', '바쁘다', '한가하다', '피곤하다', '힘들다', '아프다',
+  '건강하다', '튼튼하다', '약하다', '강하다', '중요하다', '필요하다', '유명하다', '특별하다',
+  '평범하다', '복잡하다', '단순하다', '간단하다', '편하다', '불편하다', '안전하다', '위험하다',
+  '친절하다', '불친절하다', '착하다', '똑똑하다', '현명하다', '어리석다', '부지런하다', '게으르다',
+  '솔직하다', '정직하다', '성실하다', '용감하다', '비슷하다', '다르다', '같다', '새롭다',
+  '젊다', '늙다', '어리다', '가능하다', '불가능하다', '충분하다', '부족하다', '정확하다',
+  '확실하다', '분명하다', '다양하다', '심하다', '급하다', '익숙하다', '어색하다', '자연스럽다',
+  '찬란하다', '눈부시다', '소중하다', '무사하다', '훌륭하다', '대단하다', '굉장하다', '완벽하다',
+  '적당하다', '적절하다', '불안하다', '궁금하다', '급하다', '시급하다', '유리하다', '불리하다',
+]);
+
+const KOREAN_ADVERBS = new Set<string>([
+  '빨리', '천천히', '일찍', '늦게', '자주', '가끔', '종종', '항상', '늘', '언제나',
+  '벌써', '이미', '아직', '방금', '금방', '곧', '드디어', '마침내', '결국', '갑자기',
+  '문득', '꼭', '반드시', '절대', '절대로', '전혀', '별로', '그다지', '너무', '매우',
+  '아주', '참', '정말', '진짜', '가장', '제일', '더', '덜', '좀', '조금', '약간',
+  '거의', '다', '모두', '함께', '같이', '혼자', '스스로', '직접', '따로', '서로',
+  '다시', '또', '계속', '자꾸', '점점', '갈수록', '먼저', '나중에', '아까', '이따가',
+  '요즘', '최근', '원래', '보통', '대개', '특히', '특별히', '아마', '혹시', '설마',
+  '과연', '차라리', '오히려', '게다가', '더구나', '그래도', '그러나', '하지만', '그런데',
+  '그래서', '따라서', '그러므로', '즉', '만약', '만일', '비록', '아무리', '마치',
+  '거꾸로', '똑바로', '몰래', '일부러', '억지로', '실수로', '우연히', '당연히', '열심히',
+  '조용히', '충분히', '정확히', '확실히', '무사히', '완전히', '영원히', '가만히', '급히',
+]);
+
 /**
- * Smartly infers the Wortart (noun | verb | grammar) from the Korean word and translations
- * when no explicit Wortart column is provided in the file.
+ * Smartly infers the Wortart (noun | verb | adjective | adverb | phrase | grammar)
+ * from the Korean word and translations when no explicit Wortart column is provided.
  */
 export function inferWordCategory(
   kr: string,
@@ -104,35 +167,124 @@ export function inferWordCategory(
   en?: string,
   fallback: VocabCategory = 'noun'
 ): VocabCategory {
-  const cleanKr = kr.trim();
+  const cleanKr = kr.replace(/\([^)]*\)/g, '').trim();
+  const cleanDe = de.trim();
+  const cleanEn = (en || '').trim().toLowerCase();
+
+  // 1. Grammar (-, ~, -(으))
   if (cleanKr.startsWith('-') || cleanKr.startsWith('~') || cleanKr.startsWith('-(으)')) {
     return 'grammar';
   }
-  // Typical Korean verb/adjective dictionary endings
+
+  // 2. Adverbs (부사)
   if (
-    cleanKr.length >= 2 &&
-    (cleanKr.endsWith('하다') ||
+    KOREAN_ADVERBS.has(cleanKr) ||
+    (cleanKr.length >= 2 && !cleanKr.endsWith('다') && cleanKr.endsWith('히') && !['커피'].includes(cleanKr))
+  ) {
+    return 'adverb';
+  }
+
+  // 3. Multi-word Phrases / Idioms / Sentences (표현)
+  if (
+    cleanKr.endsWith('?') ||
+    cleanKr.endsWith('!') ||
+    cleanKr.endsWith('.') ||
+    cleanKr.endsWith('요') ||
+    cleanKr.endsWith('니다') ||
+    (cleanKr.includes(' ') && !cleanKr.endsWith('하다'))
+  ) {
+    return 'phrase';
+  }
+
+  // 4. Adjectives (형용사)
+  if (
+    KOREAN_ADJECTIVES.has(cleanKr) ||
+    cleanKr.endsWith('스럽다') ||
+    cleanKr.endsWith('롭다') ||
+    cleanKr.endsWith('답다')
+  ) {
+    return 'adjective';
+  }
+
+  const nonVerbDaNouns = new Set(['바다', '수다', '마다', '바리스타', '캐나다', '우간다', '베란다', '캘린더', '사이다']);
+  if (cleanKr.length >= 2 && cleanKr.endsWith('다') && !nonVerbDaNouns.has(cleanKr)) {
+    const deLower = cleanDe.toLowerCase();
+    // German adjective translation patterns (e.g. "glücklich sein", "wichtig", "einsam, melancholisch")
+    if (
+      deLower.endsWith(' sein') ||
+      cleanEn.startsWith('to be ') ||
+      cleanEn.startsWith('be ')
+    ) {
+      return 'adjective';
+    }
+
+    if (
+      cleanKr.endsWith('하다') ||
       cleanKr.endsWith('되다') ||
       cleanKr.endsWith('시키다') ||
-      cleanKr.endsWith('스럽다') ||
-      cleanKr.endsWith('롭다') ||
-      cleanKr.endsWith('지다'))
-  ) {
-    return 'verb';
-  }
-  // Other dictionary verbs ending in 다 (excluding common nouns like 바다, 수다, 마다)
-  const nonVerbDaNouns = new Set(['바다', '수다', '마다', '바리스타', '캐나다', '우간다', '베란다', '캘린더', '사이다']);
-  if (cleanKr.length >= 2 && cleanKr.endsWith('다') && !cleanKr.includes(' ') && !nonVerbDaNouns.has(cleanKr)) {
-    const cleanDe = de.trim();
-    const cleanEn = (en || '').trim().toLowerCase();
-    // In German, nouns start with an uppercase letter (unless preceded by article), whereas verbs/adjectives start lowercase
-    const deFirstChar = cleanDe.charAt(0);
+      cleanKr.endsWith('지다')
+    ) {
+      // Check if German translation looks like an adjective (lowercase, not ending in -en/-ern/-eln/-tun)
+      const firstWord = cleanDe.split(/[,;/\s]+/)[0] || '';
+      const firstChar = firstWord.charAt(0);
+      const isLower = firstChar !== '' && firstChar === firstChar.toLowerCase() && firstChar !== firstChar.toUpperCase();
+      if (
+        isLower &&
+        !firstWord.endsWith('en') &&
+        !firstWord.endsWith('ern') &&
+        !firstWord.endsWith('eln') &&
+        !firstWord.endsWith('tun') &&
+        !deLower.startsWith('sich ') &&
+        !cleanEn.startsWith('to ')
+      ) {
+        return 'adjective';
+      }
+      return 'verb';
+    }
+
+    const firstWord = cleanDe.split(/[,;/\s]+/)[0] || '';
+    const deFirstChar = firstWord.charAt(0);
     const isDeLowercase = deFirstChar !== '' && deFirstChar === deFirstChar.toLowerCase() && deFirstChar !== deFirstChar.toUpperCase();
-    if (isDeLowercase || cleanDe.toLowerCase().startsWith('sich ') || cleanEn.startsWith('to ') || cleanEn.startsWith('be ')) {
+    if (isDeLowercase || deLower.startsWith('sich ') || cleanEn.startsWith('to ')) {
+      if (
+        isDeLowercase &&
+        !firstWord.endsWith('en') &&
+        !firstWord.endsWith('ern') &&
+        !firstWord.endsWith('eln') &&
+        !firstWord.endsWith('tun') &&
+        !deLower.startsWith('sich ') &&
+        !cleanEn.startsWith('to ')
+      ) {
+        return 'adjective';
+      }
       return 'verb';
     }
   }
+
   return fallback;
+}
+
+/**
+ * Automatically upgrades legacy 'noun'/'verb' items to 'adjective', 'adverb', or 'phrase'
+ * when unambiguous, so previously uploaded lists benefit immediately.
+ */
+export function refineLegacyCategory(
+  kr: string,
+  de: string,
+  en?: string,
+  savedCat: VocabCategory = 'noun'
+): VocabCategory {
+  if (savedCat === 'adjective' || savedCat === 'adverb' || savedCat === 'phrase' || savedCat === 'grammar') {
+    return savedCat;
+  }
+  const inferred = inferWordCategory(kr, de, en, savedCat);
+  if (savedCat === 'verb' && (inferred === 'adjective' || inferred === 'phrase')) {
+    return inferred;
+  }
+  if (savedCat === 'noun' && (inferred === 'adverb' || inferred === 'phrase' || inferred === 'adjective')) {
+    return inferred;
+  }
+  return savedCat;
 }
 
 /**
@@ -176,7 +328,14 @@ export function parseVocabCsv(
 
         results.push({
           id: `c_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
-          level: obj.level === 'TOPIK II' || obj.level === 'TOPIK 2' ? 'TOPIK II' : obj.level === 'TOPIK I' || obj.level === 'TOPIK 1' ? 'TOPIK I' : defaultTopikLevel,
+          level:
+            obj.level && String(obj.level).toLowerCase().includes('drama')
+              ? 'Drama'
+              : obj.level === 'TOPIK II' || obj.level === 'TOPIK 2'
+              ? 'TOPIK II'
+              : obj.level === 'TOPIK I' || obj.level === 'TOPIK 1'
+              ? 'TOPIK I'
+              : defaultTopikLevel,
           cat: finalCat,
           sub: finalSub,
           kr,
@@ -386,7 +545,13 @@ export function parseVocabCsv(
           // Heading is purely a Wortart like "## Nomen" or "## Verben" -> keep activeSub!
           activeCat = directPos;
         } else {
-          if (low.includes('verb') || low.includes('adjektiv') || low.includes('동사') || low.includes('형용사')) {
+          if (low.includes('adjektiv') || low.includes('adjective') || low.includes('형용사')) {
+            activeCat = 'adjective';
+          } else if (low.includes('adverb') || low.includes('부사')) {
+            activeCat = 'adverb';
+          } else if (low.includes('ausdruck') || low.includes('ausdrücke') || low.includes('phrase') || low.includes('표현')) {
+            activeCat = 'phrase';
+          } else if (low.includes('verb') || low.includes('동사')) {
             activeCat = 'verb';
           } else if (low.includes('gramm') || low.includes('문법')) {
             activeCat = 'grammar';
@@ -592,7 +757,9 @@ export function parseVocabCsv(
     let resolvedLevel: TopikLevel = activeLevel;
     if (levelStr) {
       const lowLvl = levelStr.toLowerCase();
-      if (lowLvl.includes('2') || lowLvl.includes('ii') || lowLvl.includes('b1') || lowLvl.includes('b2')) {
+      if (lowLvl.includes('drama') || lowLvl.includes('kdrama') || lowLvl.includes('k-drama')) {
+        resolvedLevel = 'Drama';
+      } else if (lowLvl.includes('2') || lowLvl.includes('ii') || lowLvl.includes('b1') || lowLvl.includes('b2')) {
         resolvedLevel = 'TOPIK II';
       } else if (lowLvl.includes('1') || lowLvl.includes('i') || lowLvl.includes('a1') || lowLvl.includes('a2')) {
         resolvedLevel = 'TOPIK I';
@@ -1130,10 +1297,8 @@ export async function loadAllFromCloud(): Promise<{
     const sharedSnap = await getDocs(collection(db, 'sharedVocab'));
     sharedSnap.forEach((d) => {
       const data = d.data();
-      let cat: VocabCategory = 'noun';
-      if (data.category === 'verb' || data.category === 'grammar') {
-        cat = data.category;
-      }
+      const rawCat = normalizeCategory(data.category, 'noun');
+      const cat = refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
       customVocab.push({
         id: data.id,
         kr: data.korean,
@@ -1159,10 +1324,8 @@ export async function loadAllFromCloud(): Promise<{
     userVocabSnap.forEach((d) => {
       const data = d.data();
       if (!customVocab.some((v) => v.id === data.id || (v.kr === data.korean && v.de === data.german))) {
-        let cat: VocabCategory = 'noun';
-        if (data.category === 'verb' || data.category === 'grammar') {
-          cat = data.category;
-        }
+        const rawCat = normalizeCategory(data.category, 'noun');
+        const cat = refineLegacyCategory(data.korean || '', data.german || '', data.english, rawCat);
         customVocab.push({
           id: data.id,
           kr: data.korean,

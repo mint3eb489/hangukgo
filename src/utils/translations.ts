@@ -12,6 +12,9 @@ export interface Translations {
     all: string;
     noun: string;
     verb: string;
+    adjective: string;
+    adverb: string;
+    phrase: string;
     grammar: string;
     custom: string;
   };
@@ -106,6 +109,9 @@ export interface Translations {
     newQuizBtn: string;
     catNoun: string;
     catVerb: string;
+    catAdjective: string;
+    catAdverb: string;
+    catPhrase: string;
     catGrammar: string;
   };
   list: {
@@ -199,6 +205,9 @@ export const translations: Record<AppLanguage, Translations> = {
       all: 'Alle',
       noun: 'Nomen',
       verb: 'Verben',
+      adjective: 'Adjektive',
+      adverb: 'Adverbien',
+      phrase: 'Ausdrücke',
       grammar: 'Grammatik',
       custom: '★ Eigene',
     },
@@ -293,6 +302,9 @@ export const translations: Record<AppLanguage, Translations> = {
       newQuizBtn: 'Neues Quiz starten',
       catNoun: '명사 Nomen',
       catVerb: '동사 Verb',
+      catAdjective: '형용사 Adjektiv',
+      catAdverb: '부사 Adverb',
+      catPhrase: '표현 Ausdruck',
       catGrammar: '문법 Grammatik',
     },
     list: {
@@ -384,6 +396,9 @@ export const translations: Record<AppLanguage, Translations> = {
       all: '전체',
       noun: '명사',
       verb: '동사',
+      adjective: '형용사',
+      adverb: '부사',
+      phrase: '표현',
       grammar: '문법',
       custom: '★ 내 단어',
     },
@@ -478,6 +493,9 @@ export const translations: Record<AppLanguage, Translations> = {
       newQuizBtn: '새 퀴즈 시작하기',
       catNoun: '명사',
       catVerb: '동사',
+      catAdjective: '형용사',
+      catAdverb: '부사',
+      catPhrase: '표현',
       catGrammar: '문법',
     },
     list: {

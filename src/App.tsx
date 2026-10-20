@@ -30,7 +30,7 @@ import { DRAMA_VOCAB_ITEMS } from './data/dramaVocabData';
 import { generateBunnyHopList } from './utils/bunnyRandomizer';
 import { TaegeukThemeToggle } from './components/TaegeukThemeToggle';
 import { ExtrasDrawer } from './components/ExtrasDrawer';
-import { DeckFilterPopover } from './components/DeckFilterPopover';
+import { DeckFilterPopover, CategoryFilter } from './components/DeckFilterPopover';
 import { GatHatIcon } from './components/GatHatIcon';
 import { DancheongSettingsIcon } from './components/DancheongSettingsIcon';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -87,7 +87,7 @@ export default function App() {
   const t = translations[language];
 
   useEffect(() => {
-    document.title = '한국GO - Korean Flashcards & Quiz';
+    document.title = '한국GO';
   }, []);
 
   // Theme state: 'light' | 'dark' - defaults to light
@@ -160,7 +160,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'card' | 'listening' | 'quiz' | 'list'>('card');
 
   // Filters & State
-  const [category, setCategory] = useState<'all' | 'noun' | 'verb' | 'grammar' | 'custom'>('all');
+  const [category, setCategory] = useState<CategoryFilter>('all');
   const [subcategory, setSubcategory] = useState<string>('all');
   const [onlyDue, setOnlyDue] = useState<boolean>(false);
   const [krToDe, setKrToDe] = useState<boolean>(true);
@@ -254,35 +254,44 @@ export default function App() {
   // Combine items per TOPIK level (base datasets + static /src/data/*.md files + custom uploaded vocab)
   const topik1AllItems = useMemo<VocabItem[]>(() => {
     const mdItems = loadAllMarkdownFilesVocab().filter(
-      (item) => (item.level || 'TOPIK II') === 'TOPIK I'
+      (item) => item.level === 'TOPIK I'
     );
-    const customs = customVocab.filter((item) => (item.level || 'TOPIK II') === 'TOPIK I');
+    const customs = customVocab.filter((item) => item.level === 'TOPIK I');
     return [...rawDataTopik1, ...mdItems, ...customs];
   }, [customVocab]);
 
   const topik2AllItems = useMemo<VocabItem[]>(() => {
     const mdItems = loadAllMarkdownFilesVocab().filter(
-      (item) => (item.level || 'TOPIK II') === 'TOPIK II'
+      (item) => item.level === 'TOPIK II' || (!item.level && item.level !== 'Drama' && item.level !== 'TOPIK I')
     );
-    const customs = customVocab.filter((item) => (item.level || 'TOPIK II') === 'TOPIK II');
+    const customs = customVocab.filter(
+      (item) => item.level === 'TOPIK II' || (!item.level && item.level !== 'Drama' && item.level !== 'TOPIK I')
+    );
     return [...rawDataTopik2, ...mdItems, ...customs];
+  }, [customVocab]);
+
+  // Drama exclusive items: only shown in Drama mode
+  const dramaAllItems = useMemo<VocabItem[]>(() => {
+    const mdItems = loadAllMarkdownFilesVocab().filter((item) => item.level === 'Drama');
+    const customs = customVocab.filter((item) => item.level === 'Drama');
+    return [...DRAMA_VOCAB_ITEMS, ...mdItems, ...customs];
   }, [customVocab]);
 
   // Combined pool of all available lists across TOPIK I, TOPIK II (and fallback to Drama if none uploaded)
   const bunnySourcePool = useMemo<VocabItem[]>(() => {
     const combined = [...topik1AllItems, ...topik2AllItems];
-    return combined.length > 0 ? combined : DRAMA_VOCAB_ITEMS;
-  }, [topik1AllItems, topik2AllItems]);
+    return combined.length > 0 ? combined : dramaAllItems;
+  }, [topik1AllItems, topik2AllItems, dramaAllItems]);
 
   const allLevelItems = useMemo<VocabItem[]>(() => {
     if (specialPlayMode === 'drama') {
-      return DRAMA_VOCAB_ITEMS;
+      return dramaAllItems;
     }
     if (specialPlayMode === 'bunny') {
       return bunnyDeck;
     }
     return topikLevel === 'TOPIK I' ? topik1AllItems : topik2AllItems;
-  }, [specialPlayMode, bunnyDeck, topikLevel, topik1AllItems, topik2AllItems]);
+  }, [specialPlayMode, bunnyDeck, topikLevel, topik1AllItems, topik2AllItems, dramaAllItems]);
 
   // Apply random selection from Soju Roulette
   const handleApplySojuSelection = useCallback((sel: SojuSelection) => {
@@ -337,12 +346,18 @@ export default function App() {
   const counts = useMemo(() => {
     const noun = allLevelItems.filter((i) => i.cat === 'noun').length;
     const verb = allLevelItems.filter((i) => i.cat === 'verb').length;
+    const adjective = allLevelItems.filter((i) => i.cat === 'adjective').length;
+    const adverb = allLevelItems.filter((i) => i.cat === 'adverb').length;
+    const phrase = allLevelItems.filter((i) => i.cat === 'phrase').length;
     const grammar = allLevelItems.filter((i) => i.cat === 'grammar').length;
     const custom = allLevelItems.filter((i) => i.custom === true).length;
     return {
       all: allLevelItems.length,
       noun,
       verb,
+      adjective,
+      adverb,
+      phrase,
       grammar,
       custom,
     };
@@ -443,13 +458,15 @@ export default function App() {
         return { ...prev, [id]: updated };
       });
 
-      if (onlyDue && success) {
-        // Card will naturally move out of due filter
-      } else {
-        handleNext();
+      // ONLY advance the card in Flashcard and Listening modes!
+      // In Quiz and List modes, the view manages its own progression and MUST NOT trigger handleNext()!
+      if (viewMode === 'card' || viewMode === 'listening') {
+        if (!onlyDue || !success) {
+          handleNext();
+        }
       }
     },
-    [onlyDue, handleNext]
+    [onlyDue, handleNext, viewMode]
   );
 
   const handleShuffle = () => {
@@ -480,7 +497,12 @@ export default function App() {
       });
       return merged;
     });
-    if (topikLevel !== targetLevel) {
+    if (targetLevel === 'Drama') {
+      setSpecialPlayMode('drama');
+      setCategory('all');
+      setSubcategory('all');
+    } else if (topikLevel !== targetLevel) {
+      setSpecialPlayMode('none');
       setTopikLevel(targetLevel);
     }
   };
@@ -1245,7 +1267,7 @@ export default function App() {
         srsMap={srsMap}
         customVocab={customVocab}
         lang={language}
-        currentLevel={topikLevel}
+        currentLevel={specialPlayMode === 'drama' ? 'Drama' : topikLevel}
         initialTab={syncModalTab}
         onAddVocab={handleAddVocab}
         onImportSync={handleImportSync}
@@ -1303,7 +1325,13 @@ export default function App() {
         lang={language}
         currentShowSub={specialPlayMode === 'drama' ? subcategory : 'all'}
         currentMode={viewMode}
+        dramaItems={dramaAllItems}
         onStartDramaMode={handleStartDramaMode}
+        onOpenAddDrama={(tab) => {
+          setIsDramaModalOpen(false);
+          setSyncModalTab(tab);
+          setIsSyncModalOpen(true);
+        }}
       />
 
       {/* Bunny Mode / 토끼 모드 Modal */}

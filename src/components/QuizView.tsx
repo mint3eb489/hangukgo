@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { VocabItem } from '../data/vocabData';
 import { speakKorean } from '../utils/speech';
 import { highlightKoreanVocab } from '../utils/highlightVocab';
 import { hapticRepeat, hapticSuccess, hapticTap } from '../utils/haptics';
 import { HanjaBreakdownBox } from './HanjaBreakdownBox';
+import { buildStrictCategoryOptions } from '../utils/quizDistractors';
 import confetti from 'canvas-confetti';
 import {
   Volume2,
@@ -43,6 +44,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
   onOpenUpload,
 }) => {
   const t = translations[lang];
+
+  // Atomic state for the active quiz round
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -50,51 +54,70 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const [bestStreak, setBestStreak] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
-  // Pool of items for the quiz: max 20 questions from current filtered deck, or all if fewer
-  const quizPool = useMemo(() => {
-    if (deck.length === 0) return [];
-    const shuffled = [...deck].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, Math.min(20, shuffled.length));
-  }, [deck]);
+  // Track the deck signature (list of IDs) and direction so we only regenerate
+  // when the user actually changes filters or direction, NOT on SRS rating updates!
+  const lastDeckSignatureRef = useRef<string>('');
+  const lastKrToDeRef = useRef<boolean>(krToDe);
 
-  // Generate question with 4 options
-  const currentQuestion = useMemo<QuizQuestion | null>(() => {
-    if (quizPool.length === 0 || questionIndex >= quizPool.length) return null;
+  const initQuizRound = useCallback(
+    (sourceDeck: VocabItem[]) => {
+      if (sourceDeck.length === 0) {
+        setQuestions([]);
+        setQuestionIndex(0);
+        setSelectedOption(null);
+        setScore(0);
+        setStreak(0);
+        setBestStreak(0);
+        setQuizFinished(false);
+        return;
+      }
 
-    const item = quizPool[questionIndex];
-    const questionText = krToDe ? item.kr : item.de;
-    const correctAnswer = krToDe ? item.de : item.kr;
+      // Max 20 questions per quiz round
+      const shuffledDeck = [...sourceDeck].sort(() => Math.random() - 0.5);
+      const roundPool = shuffledDeck.slice(0, Math.min(20, shuffledDeck.length));
 
-    // Strictly match distractors from the same grammatical category (noun, verb, grammar)
-    const sameCategoryCandidates = allLevelItems
-      .filter((i) => i.id !== item.id && i.cat === item.cat)
-      .map((i) => (krToDe ? i.de : i.kr))
-      .filter((text) => text !== correctAnswer);
+      const generated: QuizQuestion[] = roundPool.map((item) => {
+        const questionText = krToDe ? item.kr : item.de;
+        const correctAnswer = (krToDe ? item.de : item.kr).trim();
+        // Strictly match distractors from the EXACT SAME grammatical category!
+        const options = buildStrictCategoryOptions(
+          item,
+          krToDe,
+          sourceDeck,
+          allLevelItems
+        );
 
-    let uniqueDistractors = Array.from(new Set(sameCategoryCandidates))
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+        return {
+          item,
+          questionText,
+          correctAnswer,
+          options,
+        };
+      });
 
-    // Fallback if custom user list has fewer than 3 items in that specific category
-    if (uniqueDistractors.length < 3) {
-      const remainingCandidates = allLevelItems
-        .filter((i) => i.id !== item.id)
-        .map((i) => (krToDe ? i.de : i.kr))
-        .filter((text) => text !== correctAnswer && !uniqueDistractors.includes(text))
-        .sort(() => Math.random() - 0.5);
+      setQuestions(generated);
+      setQuestionIndex(0);
+      setSelectedOption(null);
+      setScore(0);
+      setStreak(0);
+      setQuizFinished(false);
+    },
+    [krToDe, allLevelItems]
+  );
 
-      uniqueDistractors = [...uniqueDistractors, ...remainingCandidates].slice(0, 3);
+  // Initialize or re-init only when the active deck content or direction changes
+  useEffect(() => {
+    const signature = deck.map((i) => i.id).join(',');
+    const directionChanged = lastKrToDeRef.current !== krToDe;
+
+    if (signature !== lastDeckSignatureRef.current || directionChanged) {
+      lastDeckSignatureRef.current = signature;
+      lastKrToDeRef.current = krToDe;
+      initQuizRound(deck);
     }
+  }, [deck, krToDe, initQuizRound]);
 
-    const options = [correctAnswer, ...uniqueDistractors].sort(() => Math.random() - 0.5);
-
-    return {
-      item,
-      questionText,
-      correctAnswer,
-      options,
-    };
-  }, [quizPool, questionIndex, krToDe, allLevelItems]);
+  const currentQuestion = questions[questionIndex] || null;
 
   const handleSelectOption = (option: string) => {
     if (selectedOption !== null || !currentQuestion) return;
@@ -132,7 +155,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   const handleNext = useCallback(() => {
     hapticTap();
-    if (questionIndex + 1 >= quizPool.length) {
+    if (questionIndex + 1 >= questions.length) {
       setQuizFinished(true);
       confetti({
         particleCount: 80,
@@ -143,21 +166,20 @@ export const QuizView: React.FC<QuizViewProps> = ({
       setQuestionIndex((i) => i + 1);
       setSelectedOption(null);
     }
-  }, [questionIndex, quizPool.length]);
+  }, [questionIndex, questions.length]);
 
   const handleRestart = () => {
     hapticTap();
-    setQuestionIndex(0);
-    setSelectedOption(null);
-    setScore(0);
-    setStreak(0);
-    setQuizFinished(false);
+    initQuizRound(deck);
   };
 
-  // Auto-advance keyboard Enter / Space after answering
+  // Auto-advance keyboard Enter / Space / ArrowRight ONLY AFTER answering
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (selectedOption !== null && (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight')) {
+      if (
+        selectedOption !== null &&
+        (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight')
+      ) {
         e.preventDefault();
         handleNext();
       }
@@ -195,7 +217,8 @@ export const QuizView: React.FC<QuizViewProps> = ({
   }
 
   if (quizFinished) {
-    const percentage = Math.round((score / quizPool.length) * 100);
+    const percentage =
+      questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
     return (
       <div className="my-8 p-8 md:p-12 text-center hanji-card-elevated rounded-3xl flex flex-col items-center justify-center space-y-5 animate-pop">
         <div className="w-16 h-16 rounded-2xl bg-celadon/15 flex items-center justify-center text-celadon shadow-sm">
@@ -203,19 +226,25 @@ export const QuizView: React.FC<QuizViewProps> = ({
         </div>
         <div className="space-y-1">
           <h2 className="text-2xl md:text-3xl font-bold font-kr text-ink">
-            {percentage >= 80 ? t.quiz.resultTitleExcellent : percentage >= 50 ? t.quiz.resultTitleGood : t.quiz.resultTitleKeepGoing}
+            {percentage >= 80
+              ? t.quiz.resultTitleExcellent
+              : percentage >= 50
+              ? t.quiz.resultTitleGood
+              : t.quiz.resultTitleKeepGoing}
           </h2>
           <p className="text-sm text-muted">
             {lang === 'kr'
-              ? `${quizPool.length}문제 중 ${score}문제를 맞혔습니다 (${percentage}%).`
-              : `Du hast ${score} von ${quizPool.length} Fragen richtig beantwortet (${percentage}%).`}
+              ? `${questions.length}문제 중 ${score}문제를 맞혔습니다 (${percentage}%).`
+              : `Du hast ${score} von ${questions.length} Fragen richtig beantwortet (${percentage}%).`}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 w-full max-w-xs tabular-nums">
           <div className="bg-surface p-4 rounded-2xl text-center border border-border-card">
             <span className="text-xs text-muted block">{t.quiz.resultScoreLabel}</span>
-            <span className="text-2xl font-bold text-celadon">{score} / {quizPool.length}</span>
+            <span className="text-2xl font-bold text-celadon">
+              {score} / {questions.length}
+            </span>
           </div>
           <div className="bg-surface p-4 rounded-2xl text-center border border-border-card">
             <span className="text-xs text-muted block">{t.quiz.resultStreakLabel}</span>
@@ -242,12 +271,23 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   const isAnswered = selectedOption !== null;
 
+  // Category label formatter supporting all categories: noun, verb, adjective, adverb, phrase, grammar
+  const renderCategoryBadge = (cat?: string) => {
+    if (cat === 'noun') return t.quiz.catNoun;
+    if (cat === 'verb') return t.quiz.catVerb;
+    if (cat === 'adjective') return t.quiz.catAdjective;
+    if (cat === 'adverb') return t.quiz.catAdverb;
+    if (cat === 'phrase') return t.quiz.catPhrase;
+    if (cat === 'grammar') return t.quiz.catGrammar;
+    return cat || '';
+  };
+
   return (
     <div className="mt-1.5 flex flex-col max-w-2xl mx-auto w-full">
       {/* Quiz Progress & Stats */}
       <div className="flex items-center justify-between text-xs text-muted mb-1.5 px-1 tabular-nums">
         <span className="font-semibold text-ink">
-          {t.quiz.questionOf(questionIndex + 1, quizPool.length)}
+          {t.quiz.questionOf(questionIndex + 1, questions.length)}
         </span>
         <div className="flex items-center gap-3">
           {streak > 1 && (
@@ -263,7 +303,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
       <div className="w-full bg-surface h-1.5 rounded-full overflow-hidden mb-2.5 border border-border-card/80">
         <div
           className="bg-celadon h-full transition-all duration-300 ease-out"
-          style={{ width: `${((questionIndex + 1) / quizPool.length) * 100}%` }}
+          style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
 
@@ -276,11 +316,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
             <span>{currentQuestion.item.sub}</span>
             <span aria-hidden="true">·</span>
             <span className="text-celadon font-semibold">
-              {currentQuestion.item.cat === 'noun'
-                ? t.quiz.catNoun
-                : currentQuestion.item.cat === 'verb'
-                ? t.quiz.catVerb
-                : t.quiz.catGrammar}
+              {renderCategoryBadge(currentQuestion.item.cat)}
             </span>
           </div>
           <button
@@ -311,7 +347,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
           </h2>
         </div>
 
-        {/* 4 Choices */}
+        {/* 4 Choices Strictly Matched to the Question's Grammatical Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {currentQuestion.options.map((opt, idx) => {
             let btnStyle =
@@ -355,7 +391,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
           })}
         </div>
 
-        {/* Feedback box when answered */}
+        {/* Feedback box when answered - Stays comfortably until user explicitly advances */}
         {isAnswered && (
           <div className="pt-4 border-t border-border-card space-y-3.5 animate-pop">
             <HanjaBreakdownBox
@@ -371,7 +407,11 @@ export const QuizView: React.FC<QuizViewProps> = ({
                   {t.quiz.exampleLabel}
                 </span>
                 <p className="font-kr text-base font-medium text-ink leading-relaxed tracking-wide">
-                  {highlightKoreanVocab(currentQuestion.item.exKr, currentQuestion.item.kr, 'celadon')}
+                  {highlightKoreanVocab(
+                    currentQuestion.item.exKr,
+                    currentQuestion.item.kr,
+                    'celadon'
+                  )}
                 </p>
                 <p className="text-xs sm:text-sm text-muted">
                   {currentQuestion.item.exDe}

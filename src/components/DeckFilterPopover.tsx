@@ -3,7 +3,15 @@ import { Filter, RotateCw, Shuffle, Clock, Check, X, FolderOpen } from 'lucide-r
 import { AppLanguage, translations } from '../utils/translations';
 import { hapticTap } from '../utils/haptics';
 
-export type CategoryFilter = 'all' | 'noun' | 'verb' | 'grammar' | 'custom';
+export type CategoryFilter =
+  | 'all'
+  | 'noun'
+  | 'verb'
+  | 'adjective'
+  | 'adverb'
+  | 'phrase'
+  | 'grammar'
+  | 'custom';
 
 interface DeckFilterPopoverProps {
   isOpen: boolean;
@@ -19,8 +27,11 @@ interface DeckFilterPopoverProps {
     all: number;
     noun: number;
     verb: number;
+    adjective: number;
+    adverb: number;
+    phrase: number;
     grammar: number;
-    custom: number;
+    custom?: number;
   };
   customCount: number;
   deckCount: number;
@@ -80,6 +91,9 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
     all: t.categories.all,
     noun: t.categories.noun,
     verb: t.categories.verb,
+    adjective: t.categories.adjective,
+    adverb: t.categories.adverb,
+    phrase: t.categories.phrase,
     grammar: t.categories.grammar,
     custom: t.categories.all,
   };
@@ -151,12 +165,15 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
             <label className="text-[11px] font-semibold text-muted block">
               {isKr ? '품사 (Wortart)' : 'Kategorie (Wortart)'}
             </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5">
               {(
                 [
                   { id: 'all', label: t.categories.all, count: categoryCounts?.all },
                   { id: 'noun', label: t.categories.noun, count: categoryCounts?.noun },
                   { id: 'verb', label: t.categories.verb, count: categoryCounts?.verb },
+                  { id: 'adjective', label: t.categories.adjective, count: categoryCounts?.adjective },
+                  { id: 'adverb', label: t.categories.adverb, count: categoryCounts?.adverb },
+                  { id: 'phrase', label: t.categories.phrase, count: categoryCounts?.phrase },
                   { id: 'grammar', label: t.categories.grammar, count: categoryCounts?.grammar },
                 ] as const
               ).map((cat) => {

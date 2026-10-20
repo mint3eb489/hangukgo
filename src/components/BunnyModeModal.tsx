@@ -167,29 +167,37 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
         {/* Breakdown of Categories & Hopped Lists */}
         {hopResult && hopResult.items.length > 0 && (
           <div className="space-y-3">
-            {/* Category Breakdown (Nomen / Verben / Grammatik) */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-surface p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[11px] text-muted font-medium">
+            {/* Category Breakdown (Nomen / Verben / Adjektive / Grammatik) */}
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
                   {isKr ? '명사' : 'Nomen'}
                 </div>
-                <div className="text-sm font-bold text-ink mt-0.5">
+                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
                   {hopResult.categoryBreakdown.noun}
                 </div>
               </div>
-              <div className="bg-surface p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[11px] text-muted font-medium">
+              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
                   {isKr ? '동사' : 'Verben'}
                 </div>
-                <div className="text-sm font-bold text-ink mt-0.5">
+                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
                   {hopResult.categoryBreakdown.verb}
                 </div>
               </div>
-              <div className="bg-surface p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[11px] text-muted font-medium">
+              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                  {isKr ? '형용사' : 'Adjektive'}
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
+                  {hopResult.categoryBreakdown.adjective}
+                </div>
+              </div>
+              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
                   {isKr ? '문법' : 'Grammatik'}
                 </div>
-                <div className="text-sm font-bold text-ink mt-0.5">
+                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
                   {hopResult.categoryBreakdown.grammar}
                 </div>
               </div>

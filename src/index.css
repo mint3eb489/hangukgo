@@ -52,7 +52,19 @@ html, body {
   color: var(--text-ink);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Verhindert das automatische Heranzoomen bei Fokus auf Text- und Auswahleingaben auf Smartphones */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* Tactile Hanji Stationery Surfaces */

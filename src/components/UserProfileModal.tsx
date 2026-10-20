@@ -155,7 +155,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     const activeStats = currentLevel === 'TOPIK I' ? t1 : t2;
 
     // Category breakdown for active TOPIK level
-    const categories = (['noun', 'verb', 'grammar', 'custom'] as const)
+    const categories = (['noun', 'verb', 'adjective', 'adverb', 'phrase', 'grammar'] as const)
       .map((cat) => {
         const catItems = activeItems.filter((i) => i.cat === cat);
         const studied = catItems.filter((i) => getSrsRecord(i.id, srsMap).level > 0).length;
