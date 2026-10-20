@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Filter, RotateCw, Shuffle, Clock, Check, X } from 'lucide-react';
+import { Filter, RotateCw, Shuffle, Clock, Check, X, FolderOpen } from 'lucide-react';
 import { AppLanguage, translations } from '../utils/translations';
 import { hapticTap } from '../utils/haptics';
 
@@ -15,6 +15,13 @@ interface DeckFilterPopoverProps {
   onSelectSubcategory: (sub: string) => void;
   availableSubcategories: string[];
   getSubcategoryCount: (sub: string) => number;
+  categoryCounts?: {
+    all: number;
+    noun: number;
+    verb: number;
+    grammar: number;
+    custom: number;
+  };
   customCount: number;
   deckCount: number;
   onlyDue: boolean;
@@ -36,7 +43,7 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
   onSelectSubcategory,
   availableSubcategories,
   getSubcategoryCount,
-  customCount,
+  categoryCounts,
   deckCount,
   onlyDue,
   dueCount,
@@ -74,13 +81,19 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
     noun: t.categories.noun,
     verb: t.categories.verb,
     grammar: t.categories.grammar,
-    custom: t.categories.custom,
+    custom: t.categories.all,
   };
 
   // Build concise summary label for the single trigger button
-  const activeSummaryParts: string[] = [categoryLabels[category]];
+  const activeSummaryParts: string[] = [];
+  if (category !== 'all' && category !== 'custom') {
+    activeSummaryParts.push(categoryLabels[category]);
+  }
   if (subcategory !== 'all') {
     activeSummaryParts.push(subcategory);
+  }
+  if (activeSummaryParts.length === 0) {
+    activeSummaryParts.push(t.categories.all);
   }
   if (!krToDe) {
     activeSummaryParts.push('DE ➔ KR');
@@ -97,7 +110,7 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
         }}
         aria-label={isKr ? '단어장 필터' : 'Vokabel-Filter'}
         className={`min-h-[38px] px-3 py-1.5 rounded-xl border text-xs font-semibold transition flex items-center gap-2 ${
-          isOpen || category !== 'all' || subcategory !== 'all' || !krToDe
+          isOpen || (category !== 'all' && category !== 'custom') || subcategory !== 'all' || !krToDe
             ? 'bg-card border-celadon/60 text-ink shadow-2xs'
             : 'bg-surface/80 hover:bg-surface border-border-card text-ink'
         }`}
@@ -110,12 +123,15 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
         <span className="text-muted text-[10px] ml-0.5">▾</span>
       </button>
 
-      {/* Dropdown Popover Panel */}
+      {/* Dropdown Filter Menu Panel */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl hanji-card-elevated p-4 z-40 space-y-4 animate-pop">
+        <div
+          className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl hanji-card-elevated p-4 z-40 space-y-4 animate-pop"
+          role="menu"
+        >
           <div className="flex items-center justify-between pb-2.5 border-b border-border-card">
             <span className="text-xs font-bold text-ink">
-              {isKr ? '단어장 필터 및 학습 옵션' : 'Filter & Lern-Optionen'}
+              {isKr ? '카테고리 및 주제 선택' : 'Kategorie & Thema wählen'}
             </span>
             <button
               type="button"
@@ -130,22 +146,22 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
             </button>
           </div>
 
-          {/* 1. Category Selection */}
+          {/* 1. Grammatical Category (Wortart) Menu */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted block">
-              {isKr ? '품사 / 카테고리' : 'Wortart / Kategorie'}
+              {isKr ? '품사 (Wortart)' : 'Kategorie (Wortart)'}
             </label>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {(
                 [
-                  { id: 'all', label: t.categories.all },
-                  { id: 'noun', label: t.categories.noun },
-                  { id: 'verb', label: t.categories.verb },
-                  { id: 'grammar', label: t.categories.grammar },
-                  ...(customCount > 0 ? [{ id: 'custom', label: t.categories.custom }] : []),
+                  { id: 'all', label: t.categories.all, count: categoryCounts?.all },
+                  { id: 'noun', label: t.categories.noun, count: categoryCounts?.noun },
+                  { id: 'verb', label: t.categories.verb, count: categoryCounts?.verb },
+                  { id: 'grammar', label: t.categories.grammar, count: categoryCounts?.grammar },
                 ] as const
               ).map((cat) => {
-                const active = category === cat.id;
+                const active =
+                  category === cat.id || (cat.id === 'all' && category === 'custom');
                 return (
                   <button
                     key={cat.id}
@@ -154,44 +170,108 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
                       hapticTap();
                       onSelectCategory(cat.id as CategoryFilter);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 ${
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-1.5 border ${
                       active
-                        ? 'bg-ink text-hanji shadow-2xs'
-                        : 'bg-surface text-ink hover:bg-stone-200 dark:hover:bg-stone-700/60'
+                        ? 'bg-ink text-hanji border-ink shadow-2xs'
+                        : 'bg-surface text-ink border-border-card hover:bg-stone-200 dark:hover:bg-stone-700/60'
                     }`}
                   >
-                    {active && <Check className="w-3 h-3" />}
-                    <span>{cat.label}</span>
+                    <span className="flex items-center gap-1.5 truncate">
+                      {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="truncate">{cat.label}</span>
+                    </span>
+                    {typeof cat.count === 'number' && (
+                      <span className="opacity-75 font-mono text-[10px] shrink-0">
+                        {cat.count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 2. Subcategory Selection */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-muted block">
-              {isKr ? '세부 주제' : 'Themenbereich'}
-            </label>
-            <select
-              value={subcategory}
-              onChange={(e) => {
-                hapticTap();
-                onSelectSubcategory(e.target.value);
-              }}
-              className="w-full bg-surface border border-border-card text-ink rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-celadon"
-            >
-              <option value="all">
-                {t.subcategories.allOption(
-                  availableSubcategories.length > 0 ? deckCount : 0
-                )}
-              </option>
-              {availableSubcategories.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub} ({getSubcategoryCount(sub)})
-                </option>
-              ))}
-            </select>
+          {/* 2. Subcategory / Topic Menu List */}
+          <div className="space-y-1.5 pt-2 border-t border-border-card">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-muted flex items-center gap-1.5">
+                <FolderOpen className="w-3.5 h-3.5 text-celadon" />
+                <span>{isKr ? '세부 주제 (Unterkategorie)' : 'Unterkategorie'}</span>
+              </label>
+              {subcategory !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    onSelectSubcategory('all');
+                  }}
+                  className="text-[11px] text-celadon hover:underline font-semibold"
+                >
+                  {isKr ? '초기화' : 'Zurücksetzen'}
+                </button>
+              )}
+            </div>
+
+            {availableSubcategories.length > 0 ? (
+              <div className="max-h-52 overflow-y-auto rounded-xl border border-border-card bg-surface/60 divide-y divide-border-card/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    onSelectSubcategory('all');
+                    onClose();
+                  }}
+                  className={`w-full px-3 py-2.5 text-xs font-semibold transition flex items-center justify-between gap-2 text-left ${
+                    subcategory === 'all'
+                      ? 'bg-celadon/15 text-celadon font-bold'
+                      : 'text-ink hover:bg-surface'
+                  }`}
+                >
+                  <span className="truncate">
+                    {isKr ? '전체 주제 (Alle Unterkategorien)' : 'Alle Unterkategorien'}
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-mono text-[11px] text-muted">
+                      {categoryCounts ? categoryCounts.all : deckCount}
+                    </span>
+                    {subcategory === 'all' && <Check className="w-3.5 h-3.5 text-celadon" />}
+                  </span>
+                </button>
+
+                {availableSubcategories.map((sub) => {
+                  const active = subcategory === sub;
+                  const count = getSubcategoryCount(sub);
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => {
+                        hapticTap();
+                        onSelectSubcategory(sub);
+                        onClose();
+                      }}
+                      className={`w-full px-3 py-2.5 text-xs font-semibold transition flex items-center justify-between gap-2 text-left ${
+                        active
+                          ? 'bg-celadon/15 text-celadon font-bold'
+                          : 'text-ink hover:bg-surface'
+                      }`}
+                    >
+                      <span className="truncate">{sub}</span>
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-mono text-[11px] text-muted">{count}</span>
+                        {active && <Check className="w-3.5 h-3.5 text-celadon" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted italic">
+                {isKr
+                  ? '아직 등록된 세부 주제가 없습니다.'
+                  : 'Noch keine Unterkategorien vorhanden.'}
+              </p>
+            )}
           </div>
 
           {/* 3. Deck & Study Options (Direction, Due Only, Shuffle) */}
@@ -222,7 +302,7 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
                   onShuffle();
                   onClose();
                 }}
-                className="min-h-[40px] px-3 py-2 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-ink text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                className="min-h-[40px] px-3 py-2 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-ink text-xs font-semibold transition flex items-center gap-1.5"
               >
                 <Shuffle className="w-3.5 h-3.5 text-obangBlue" />
                 <span>{t.actions.shuffle}</span>

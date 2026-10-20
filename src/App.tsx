@@ -22,6 +22,12 @@ import { AppLogo } from './components/AppLogo';
 import { HangukGoWordmark } from './components/HangukGoWordmark';
 import { RamyeonTimerModal, RamyeonFloatingWidget } from './components/RamyeonTimerModal';
 import { SojuRouletteModal } from './components/SojuRouletteModal';
+import { DramaModeModal, DramaViewMode } from './components/DramaModeModal';
+import { BunnyModeModal, BunnyViewMode } from './components/BunnyModeModal';
+import { RetroTvIcon } from './components/RetroTvIcon';
+import { BunnyEarsIcon } from './components/BunnyEarsIcon';
+import { DRAMA_VOCAB_ITEMS } from './data/dramaVocabData';
+import { generateBunnyHopList } from './utils/bunnyRandomizer';
 import { TaegeukThemeToggle } from './components/TaegeukThemeToggle';
 import { ExtrasDrawer } from './components/ExtrasDrawer';
 import { DeckFilterPopover } from './components/DeckFilterPopover';
@@ -49,6 +55,8 @@ import {
   Headphones,
   Sparkles,
   List,
+  RotateCw,
+  X,
 } from 'lucide-react';
 
 export default function App() {
@@ -170,6 +178,13 @@ export default function App() {
   const [syncModalTab, setSyncModalTab] = useState<SyncModalTab>('single');
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isSojuModalOpen, setIsSojuModalOpen] = useState(false);
+  const [isDramaModalOpen, setIsDramaModalOpen] = useState(false);
+  const [isBunnyModalOpen, setIsBunnyModalOpen] = useState(false);
+
+  // Special Play Modes ('none' | 'drama' | 'bunny')
+  const [specialPlayMode, setSpecialPlayMode] = useState<'none' | 'drama' | 'bunny'>('none');
+  const [bunnyDeck, setBunnyDeck] = useState<VocabItem[]>([]);
+  const [bunnySourceSubs, setBunnySourceSubs] = useState<string[]>([]);
 
   // Ramyeon 4-Minuten Timer State
   const [ramyeonTimeLeft, setRamyeonTimeLeft] = useState<number>(240);
@@ -253,12 +268,25 @@ export default function App() {
     return [...rawDataTopik2, ...mdItems, ...customs];
   }, [customVocab]);
 
+  // Combined pool of all available lists across TOPIK I, TOPIK II (and fallback to Drama if none uploaded)
+  const bunnySourcePool = useMemo<VocabItem[]>(() => {
+    const combined = [...topik1AllItems, ...topik2AllItems];
+    return combined.length > 0 ? combined : DRAMA_VOCAB_ITEMS;
+  }, [topik1AllItems, topik2AllItems]);
+
   const allLevelItems = useMemo<VocabItem[]>(() => {
+    if (specialPlayMode === 'drama') {
+      return DRAMA_VOCAB_ITEMS;
+    }
+    if (specialPlayMode === 'bunny') {
+      return bunnyDeck;
+    }
     return topikLevel === 'TOPIK I' ? topik1AllItems : topik2AllItems;
-  }, [topikLevel, topik1AllItems, topik2AllItems]);
+  }, [specialPlayMode, bunnyDeck, topikLevel, topik1AllItems, topik2AllItems]);
 
   // Apply random selection from Soju Roulette
   const handleApplySojuSelection = useCallback((sel: SojuSelection) => {
+    setSpecialPlayMode('none');
     setViewMode(sel.mode);
     setCategory(sel.category);
     setSubcategory(sel.subcategory);
@@ -266,6 +294,44 @@ export default function App() {
     setIsFlipped(false);
     setDeckOrder([]);
   }, []);
+
+  // Start Drama Mode
+  const handleStartDramaMode = useCallback((dramaSub: string, mode: DramaViewMode) => {
+    setSpecialPlayMode('drama');
+    setViewMode(mode);
+    setCategory('all');
+    setSubcategory(dramaSub);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setDeckOrder([]);
+  }, []);
+
+  // Start Bunny Mode
+  const handleStartBunnyList = useCallback(
+    (items: VocabItem[], mode: BunnyViewMode, sourceSubs: string[]) => {
+      setBunnyDeck(items);
+      setBunnySourceSubs(sourceSubs);
+      setSpecialPlayMode('bunny');
+      setViewMode(mode);
+      setCategory('all');
+      setSubcategory('all');
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setDeckOrder([]);
+    },
+    []
+  );
+
+  const handleQuickRehopBunny = useCallback(() => {
+    hapticTap();
+    const size = bunnyDeck.length > 0 ? bunnyDeck.length : 25;
+    const next = generateBunnyHopList(bunnySourcePool, size);
+    setBunnyDeck(next.items);
+    setBunnySourceSubs(next.sourceSubcategories);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setDeckOrder([]);
+  }, [bunnyDeck.length, bunnySourcePool]);
 
   // Counts for Category buttons
   const counts = useMemo(() => {
@@ -282,24 +348,20 @@ export default function App() {
     };
   }, [allLevelItems]);
 
-  // If custom category was selected but there are no custom items, switch back to 'all'
+  // Normalize legacy 'custom' category filter to 'all'
   useEffect(() => {
-    if (category === 'custom' && counts.custom === 0) {
+    if (category === 'custom') {
       setCategory('all');
     }
-  }, [category, counts.custom]);
+  }, [category]);
 
-  // Subcategories available for current category
+  // All subcategories available in the current TOPIK level
   const availableSubcategories = useMemo(() => {
-    let items = allLevelItems;
-    if (category === 'custom') {
-      items = items.filter((i) => i.custom);
-    } else if (category !== 'all') {
-      items = items.filter((i) => i.cat === category);
-    }
-    const subs = Array.from(new Set(items.map((i) => i.sub)));
+    const subs = Array.from(
+      new Set(allLevelItems.map((i) => (i.sub && i.sub.trim() ? i.sub.trim() : 'Allgemein')))
+    );
     return subs;
-  }, [allLevelItems, category]);
+  }, [allLevelItems]);
 
   // Reset subcategory if not in available list
   useEffect(() => {
@@ -313,8 +375,10 @@ export default function App() {
     const filtered = allLevelItems.filter((item) => {
       const matchCat =
         category === 'all' ||
-        (category === 'custom' ? item.custom === true : item.cat === category);
-      const matchSub = subcategory === 'all' || item.sub === subcategory;
+        category === 'custom' ||
+        item.cat === category;
+      const itemSub = item.sub && item.sub.trim() ? item.sub.trim() : 'Allgemein';
+      const matchSub = subcategory === 'all' || itemSub === subcategory;
 
       const record = getSrsRecord(item.id, srsMap);
       const matchDue = !onlyDue || isCardDue(record);
@@ -400,7 +464,17 @@ export default function App() {
     setCustomVocab((prev) => {
       const merged = [...prev];
       newItems.forEach((item) => {
-        if (!merged.some((m) => m.id === item.id || (m.kr === item.kr && m.de === item.de))) {
+        const existingIndex = merged.findIndex(
+          (m) => m.id === item.id || m.kr.trim() === item.kr.trim()
+        );
+        if (existingIndex !== -1) {
+          // Update existing item in-place (preserving original ID so SRS progress stays intact!)
+          merged[existingIndex] = {
+            ...merged[existingIndex],
+            ...item,
+            id: merged[existingIndex].id,
+          };
+        } else {
           merged.push(item);
         }
       });
@@ -408,14 +482,6 @@ export default function App() {
     });
     if (topikLevel !== targetLevel) {
       setTopikLevel(targetLevel);
-    }
-    // Automatically persist to Firebase Firestore if logged in
-    if (auth.currentUser) {
-      try {
-        await saveMultipleVocabToCloud(newItems, undefined, undefined, targetLevel);
-      } catch (err) {
-        console.warn('Auto-save to Firebase failed:', err);
-      }
     }
   };
 
@@ -451,6 +517,17 @@ export default function App() {
         console.warn('Cloud delete failed:', err);
       }
     }
+  };
+
+  const handleDeleteVocabBatch = (deletedIds: string[]) => {
+    if (!deletedIds || deletedIds.length === 0) return;
+    const idSet = new Set(deletedIds);
+    setCustomVocab((prev) => prev.filter((item) => !idSet.has(item.id)));
+    setSrsMap((prev) => {
+      const next = { ...prev };
+      deletedIds.forEach((id) => delete next[id]);
+      return next;
+    });
   };
 
   const handleImportSync = (
@@ -667,6 +744,7 @@ export default function App() {
               type="button"
               onClick={() => {
                 hapticTap();
+                setSpecialPlayMode('none');
                 setTopikLevel(topikLevel === 'TOPIK I' ? 'TOPIK II' : 'TOPIK I');
                 setDeckOrder([]);
               }}
@@ -676,7 +754,9 @@ export default function App() {
                   : `Klicken zum Wechseln auf ${topikLevel === 'TOPIK I' ? 'TOPIK II' : 'TOPIK I'}`
               }
               className={`md:hidden min-h-[38px] w-[88px] px-2 py-1.5 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1 whitespace-nowrap shadow-2xs ${
-                topikLevel === 'TOPIK I'
+                specialPlayMode !== 'none'
+                  ? 'bg-surface text-muted border-border-card'
+                  : topikLevel === 'TOPIK I'
                   ? 'bg-obangBlue text-white border-obangBlue'
                   : 'bg-celadon text-white border-celadon'
               }`}
@@ -691,11 +771,12 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   hapticTap();
+                  setSpecialPlayMode('none');
                   setTopikLevel('TOPIK I');
                   setDeckOrder([]);
                 }}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  topikLevel === 'TOPIK I'
+                  specialPlayMode === 'none' && topikLevel === 'TOPIK I'
                     ? 'bg-obangBlue text-white shadow-2xs'
                     : 'text-muted hover:text-ink'
                 }`}
@@ -706,11 +787,12 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   hapticTap();
+                  setSpecialPlayMode('none');
                   setTopikLevel('TOPIK II');
                   setDeckOrder([]);
                 }}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  topikLevel === 'TOPIK II'
+                  specialPlayMode === 'none' && topikLevel === 'TOPIK II'
                     ? 'bg-celadon text-white shadow-2xs'
                     : 'text-muted hover:text-ink'
                 }`}
@@ -792,7 +874,14 @@ export default function App() {
               setCurrentIndex(0);
             }}
             availableSubcategories={availableSubcategories}
-            getSubcategoryCount={(sub) => allLevelItems.filter((i) => i.sub === sub).length}
+            getSubcategoryCount={(sub) =>
+              allLevelItems.filter(
+                (i) =>
+                  (i.sub && i.sub.trim() ? i.sub.trim() : 'Allgemein') === sub &&
+                  (category === 'all' || category === 'custom' || i.cat === category)
+              ).length
+            }
+            categoryCounts={counts}
             customCount={counts.custom}
             deckCount={filteredDeck.length}
             onlyDue={onlyDue}
@@ -837,6 +926,71 @@ export default function App() {
             </span>
           </div>
         </div>
+
+        {/* ACTIVE SPECIAL MODE BANNER (Drama Mode or Bunny Mode) */}
+        {specialPlayMode !== 'none' && (
+          <div
+            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-2xl border text-xs ${
+              specialPlayMode === 'drama'
+                ? 'bg-obangBlue/10 border-obangBlue/30 text-ink'
+                : 'bg-ochre/10 border-ochre/30 text-ink'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {specialPlayMode === 'drama' ? (
+                <RetroTvIcon className="w-5 h-5 shrink-0" idPrefix="active-drama-banner" />
+              ) : (
+                <BunnyEarsIcon className="w-5 h-5 shrink-0" idPrefix="active-bunny-banner" />
+              )}
+              <span className="font-bold truncate">
+                {specialPlayMode === 'drama'
+                  ? language === 'kr'
+                    ? `드라마 모드 · ${subcategory === 'all' ? '전체 K-드라마' : subcategory}`
+                    : `Drama-Modus · ${subcategory === 'all' ? 'Alle K-Dramas' : subcategory}`
+                  : language === 'kr'
+                  ? `토끼 모드 · ${bunnyDeck.length}단어 (${bunnySourceSubs.length}개 리스트 믹스)`
+                  : `Bunny-Modus · ${bunnyDeck.length} Wörter (${bunnySourceSubs.length} Listen gemischt)`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {specialPlayMode === 'drama' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    setIsDramaModalOpen(true);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] transition"
+                >
+                  {language === 'kr' ? '채널 변경' : 'Serie wählen'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleQuickRehopBunny}
+                  className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] flex items-center gap-1 transition"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  <span>{language === 'kr' ? '다시 점프' : 'Neu hüpfen'}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  setSpecialPlayMode('none');
+                  setSubcategory('all');
+                  setCurrentIndex(0);
+                }}
+                className="p-1 rounded-lg hover:bg-card text-muted hover:text-ink transition"
+                title={language === 'kr' ? '일반 모드로 돌아가기' : 'Modus beenden'}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* MAIN VIEW CONTENT */}
@@ -1058,6 +1212,8 @@ export default function App() {
         ramyeonTimeLeft={ramyeonTimeLeft}
         onOpenRamyeon={handleRamyeonButtonClick}
         onOpenSoju={() => setIsSojuModalOpen(true)}
+        onOpenDrama={() => setIsDramaModalOpen(true)}
+        onOpenBunny={() => setIsBunnyModalOpen(true)}
         onOpenAddVocab={() => {
           setSyncModalTab('single');
           setIsSyncModalOpen(true);
@@ -1094,6 +1250,7 @@ export default function App() {
         onAddVocab={handleAddVocab}
         onImportSync={handleImportSync}
         onClearCustom={handleClearCustom}
+        onDeleteVocabBatch={handleDeleteVocabBatch}
       />
 
       <ResetModal
@@ -1134,9 +1291,28 @@ export default function App() {
       <SojuRouletteModal
         isOpen={isSojuModalOpen}
         onClose={() => setIsSojuModalOpen(false)}
-        availableItems={allLevelItems}
+        availableItems={bunnySourcePool}
         lang={language}
         onApplySelection={handleApplySojuSelection}
+      />
+
+      {/* Drama Mode Modal */}
+      <DramaModeModal
+        isOpen={isDramaModalOpen}
+        onClose={() => setIsDramaModalOpen(false)}
+        lang={language}
+        currentShowSub={specialPlayMode === 'drama' ? subcategory : 'all'}
+        currentMode={viewMode}
+        onStartDramaMode={handleStartDramaMode}
+      />
+
+      {/* Bunny Mode / 토끼 모드 Modal */}
+      <BunnyModeModal
+        isOpen={isBunnyModalOpen}
+        onClose={() => setIsBunnyModalOpen(false)}
+        availableItems={bunnySourcePool}
+        lang={language}
+        onStartBunnyList={handleStartBunnyList}
       />
     </div>
   );

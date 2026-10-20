@@ -24,6 +24,17 @@ const NATIVE_KOREAN_WORDS = new Set<string>([
   '이루다', '이루어지다', '미치다', '주다', '막다', '지키다', '보이다',
   '닫히다', '열리다', '끊기다', '먹이다', '입히다', '알리다', '웃기다',
   '재우다', '짠', '불고기', '찌개', '막걸리', '삼겹살',
+  '사람', '사랑', '마음', '아이', '아기', '어제', '오늘', '내일', '모레',
+  '우리', '나라', '머리', '노래', '바다', '하늘', '바람', '구름', '비를',
+  '아침', '저녁', '여름', '가을', '겨울', '하루', '나이', '이름', '마당',
+  '오빠', '언니', '누나', '엄마', '아빠', '할머니', '할아버지', '아저씨',
+  '강아지', '고양이', '호랑이', '코끼리', '거북이', '토끼', '오리', '여우',
+  '나무', '가지', '열매', '뿌리', '하나', '둘', '셋', '넷', '다섯', '여섯',
+  '일곱', '여덟', '아홉', '열', '스물', '서른', '마흔', '쉰', '아름답다',
+  '고맙다', '반갑다', '즐겁다', '슬프다', '기쁘다', '아프다', '바쁘다',
+  '예쁘다', '나쁘다', '크다', '작다', '많다', '적다', '길다', '짧다',
+  '높다', '낮다', '넓다', '좁다', '깊다', '얕다', '버스', '택시', '커피',
+  '컴퓨터', '인터넷', '텔레비전', '라디오', '카메라', '호텔', '아파트',
 ]);
 
 /**
@@ -884,79 +895,523 @@ export const HANJA_WORD_DICT: Record<string, HanjaWordEntry> = {
     ],
     family: ['사용 (Gebrauch)', '대사관 (Botschaft)'],
   },
+
+  // === ERWEITERTE TOPIK I & II KERNWÖRTER (WIRTSCHAFT, ALLTAG, GESELLSCHAFT, MEDIZIN, REISEN) ===
+  정치: {
+    hanja: '政治',
+    roots: [
+      { syllable: '정', char: '政', de: 'Politik, Regierung', kr: '정사 정' },
+      { syllable: '치', char: '治', de: 'regieren, ordnen, heilen', kr: '다스릴 치' },
+    ],
+    family: ['정부 (Regierung)', '행정 (Verwaltung)', '치료 (Behandlung)'],
+  },
+  산업: {
+    hanja: '産業',
+    roots: [
+      { syllable: '산', char: '産', de: 'produzieren, hervorbringen, Geburt', kr: '낳을 산' },
+      { syllable: '업', char: '業', de: 'Gewerbe, Branche, Tätigkeit', kr: '업 업' },
+    ],
+    family: ['생산 (Produktion)', '농업 (Landwirtschaft)', '상업 (Handel)'],
+  },
+  무역: {
+    hanja: '貿易',
+    roots: [
+      { syllable: '무', char: '貿', de: 'Handel treiben, tauschen', kr: '무역할 무' },
+      { syllable: '역', char: '易', de: 'austauschen, wechseln, leicht', kr: '바꿀 역' },
+    ],
+    family: ['수출 (Export)', '수입 (Import)', '교역 (Handelsverkehr)'],
+  },
+  가격: {
+    hanja: '價格',
+    roots: [
+      { syllable: '가', char: '價', de: 'Preis, Wert', kr: '값 가' },
+      { syllable: '격', char: '格', de: 'Norm, Rang, Status', kr: '격식 격' },
+    ],
+    family: ['가치 (Wert)', '물가 (Preisniveau)', '자격 (Qualifikation)'],
+  },
+  비용: {
+    hanja: '費用',
+    roots: [
+      { syllable: '비', char: '費', de: 'Kosten, Gebühr, ausgeben', kr: '쓸 비' },
+      { syllable: '용', char: '用', de: 'gebrauchen, nutzen', kr: '쓸 용' },
+    ],
+    family: ['학비 (Studiengebühr)', '생활비 (Lebenshaltungskosten)', '소비 (Konsum)'],
+  },
+  품질: {
+    hanja: '品質',
+    roots: [
+      { syllable: '품', char: '品', de: 'Ware, Produkt, Güte', kr: '물건 품' },
+      { syllable: '질', char: '質', de: 'Qualität, Beschaffenheit, Frage', kr: '바탕 질' },
+    ],
+    family: ['제품 (Produkt)', '상품 (Handelsware)', '질문 (Frage)'],
+  },
+  수량: {
+    hanja: '數量',
+    roots: [
+      { syllable: '수', char: '數', de: 'Zahl, Anzahl, zählen', kr: '셈 수' },
+      { syllable: '량', char: '量', de: 'Menge, Maß, abwägen', kr: '헤아릴 량' },
+    ],
+    family: ['수학 (Mathematik)', '분량 (Umfang/Menge)', '역량 (Kapazität)'],
+  },
+  번호: {
+    hanja: '番號',
+    roots: [
+      { syllable: '번', char: '番', de: 'Nummer, Reihe, Mal', kr: '차례 번' },
+      { syllable: '호', char: '號', de: 'Nummer, Zeichen, Name', kr: '이름 호' },
+    ],
+    family: ['순번 (Reihenfolge)', '신호 (Signal)', '기호 (Symbol)'],
+  },
+  세계: {
+    hanja: '世界',
+    roots: [
+      { syllable: '세', char: '世', de: 'Welt, Generation, Epoche', kr: '인간 세' },
+      { syllable: '계', char: '界', de: 'Grenze, Bereich, Welt', kr: '지경 계' },
+    ],
+    family: ['세대 (Generation)', '세기 (Jahrhundert)', '한계 (Grenze)'],
+  },
+  시대: {
+    hanja: '時代',
+    roots: [
+      { syllable: '시', char: '時', de: 'Zeit, Epoche, Stunde', kr: '때 시' },
+      { syllable: '대', char: '代', de: 'Generation, Ära, vertreten', kr: '대신할 대' },
+    ],
+    family: ['현대 (Moderne)', '대표 (Vertreter)', '대신 (anstelle von)'],
+  },
+  국민: {
+    hanja: '國民',
+    roots: [
+      { syllable: '국', char: '國', de: 'Land, Staat, Nation', kr: '나라 국' },
+      { syllable: '민', char: '民', de: 'Volk, Bürger', kr: '백성 민' },
+    ],
+    family: ['시민 (Bürger)', '민주주의 (Demokratie)', '주민 (Einwohner)'],
+  },
+  도시: {
+    hanja: '都市',
+    roots: [
+      { syllable: '도', char: '都', de: 'Metropole, Hauptstadt', kr: '도읍 도' },
+      { syllable: '시', char: '市', de: 'Stadt, Markt', kr: '저자 시' },
+    ],
+    family: ['수도 (Hauptstadt)', '시장 (Markt/Bürgermeister)', '시내 (Innenstadt)'],
+  },
+  지역: {
+    hanja: '地域',
+    roots: [
+      { syllable: '지', char: '地', de: 'Erde, Boden, Ort', kr: '땅 지' },
+      { syllable: '역', char: '域', de: 'Gebiet, Region, Zone', kr: '지경 역' },
+    ],
+    family: ['구역 (Bezirk/Zone)', '영역 (Bereich)', '지방 (Region)'],
+  },
+  운전: {
+    hanja: '運轉',
+    roots: [
+      { syllable: '운', char: '運', de: 'bewegen, transportieren, Schicksal', kr: '옮길 운' },
+      { syllable: '전', char: '轉', de: 'drehen, rollen, wenden', kr: '구를 전' },
+    ],
+    family: ['운동 (Sport/Bewegung)', '운명 (Schicksal)', '전환 (Wende)'],
+  },
+  주차: {
+    hanja: '駐車',
+    roots: [
+      { syllable: '주', char: '駐', de: 'parken, stationiert sein', kr: '머무를 주' },
+      { syllable: '차', char: '車', de: 'Wagen, Fahrzeug', kr: '수레 차' },
+    ],
+    family: ['주차장 (Parkplatz)', '정차 (Halten)', '자동차 (Auto)'],
+  },
+  정류장: {
+    hanja: '停留場',
+    roots: [
+      { syllable: '정', char: '停', de: 'anhalten, stoppen', kr: '머무를 정' },
+      { syllable: '류', char: '留', de: 'bleiben, verweilen', kr: '머무를 류' },
+      { syllable: '장', char: '場', de: 'Platz, Ort', kr: '마당 장' },
+    ],
+    family: ['정지 (Stopp)', '유학 (Auslandsstudium)'],
+  },
+  숙박: {
+    hanja: '宿泊',
+    roots: [
+      { syllable: '숙', char: '宿', de: 'übernachten, Unterkunft', kr: '잘 숙' },
+      { syllable: '박', char: '泊', de: 'übernachten, ankern', kr: '머무를 박' },
+    ],
+    family: ['하숙 (Pension)', '기숙사 (Wohnheim)', '일박 (eine Übernachtung)'],
+  },
+  승객: {
+    hanja: '乘客',
+    roots: [
+      { syllable: '승', char: '乘', de: 'einsteigen, fahren', kr: '탈 승' },
+      { syllable: '객', char: '客', de: 'Gast, Kunde, Passagier', kr: '손 객' },
+    ],
+    family: ['고객 (Kunde)', '관광객 (Tourist)', '탑승 (Boarding)'],
+  },
+  건축: {
+    hanja: '建築',
+    roots: [
+      { syllable: '건', char: '建', de: 'bauen, errichten, gründen', kr: '세울 건' },
+      { syllable: '축', char: '築', de: 'bauen, aufschichten', kr: '쌓을 축' },
+    ],
+    family: ['건물 (Gebäude)', '건설 (Bauwesen)'],
+  },
+  시설: {
+    hanja: '施設',
+    roots: [
+      { syllable: '시', char: '施', de: 'durchführen, anlegen', kr: '베풀 시' },
+      { syllable: '설', char: '設', de: 'einrichten, aufbauen, gründen', kr: '베풀 설' },
+    ],
+    family: ['설치 (Installation)', '설계 (Entwurf)', '설비 (Ausstattung)'],
+  },
+  도구: {
+    hanja: '道具',
+    roots: [
+      { syllable: '도', char: '道', de: 'Weg, Methode', kr: '길 도' },
+      { syllable: '구', char: '具', de: 'Werkzeug, Gerät, ausstatten', kr: '갖출 구' },
+    ],
+    family: ['가구 (Möbel)', '기구 (Apparat)', '구체적 (konkret)'],
+  },
+  사진: {
+    hanja: '寫眞',
+    roots: [
+      { syllable: '사', char: '寫', de: 'abbilden, kopieren', kr: '베낄 사' },
+      { syllable: '진', char: '眞', de: 'wahr, echt, Wirklichkeit', kr: '참 진' },
+    ],
+    family: ['묘사 (Schilderung)', '진실 (Wahrheit)', '진심 (Aufrichtigkeit)'],
+  },
+  영화: {
+    hanja: '映畵',
+    roots: [
+      { syllable: '영', char: '映', de: 'spiegeln, projizieren, scheinen', kr: '비칠 영' },
+      { syllable: '화', char: '畵', de: 'Bild, Gemälde, zeichnen', kr: '그림 화' },
+    ],
+    family: ['만화 (Comic)', '화가 (Maler)', '반영 (Widerspiegelung)'],
+  },
+  연극: {
+    hanja: '演劇',
+    roots: [
+      { syllable: '연', char: '演', de: 'aufführen, darbietend vortragen', kr: '펼 연' },
+      { syllable: '극', char: '劇', de: 'Drama, Schauspiel, heftig', kr: '심할 극' },
+    ],
+    family: ['공연 (Aufführung)', '연주 (Musikvortrag)', '극장 (Theater/Kino)'],
+  },
+  예술: {
+    hanja: '藝術',
+    roots: [
+      { syllable: '예', char: '藝', de: 'Kunst, Geschick, Talent', kr: '재주 예' },
+      { syllable: '술', char: '術', de: 'Technik, Kunstfertigkeit', kr: '재주 술' },
+    ],
+    family: ['연예인 (Entertainer)', '미술 (Bildende Kunst)', '기술 (Technik)'],
+  },
+  독서: {
+    hanja: '讀書',
+    roots: [
+      { syllable: '독', char: '讀', de: 'lesen, studieren', kr: '읽을 독' },
+      { syllable: '서', char: '書', de: 'Buch, Schrift, schreiben', kr: '글 서' },
+    ],
+    family: ['독자 (Leser)', '도서관 (Bibliothek)', '서점 (Buchhandlung)'],
+  },
+  신문: {
+    hanja: '新聞',
+    roots: [
+      { syllable: '신', char: '新', de: 'neu, frisch', kr: '새 신' },
+      { syllable: '문', char: '聞', de: 'hören, vernehmen, Nachricht', kr: '들을 문' },
+    ],
+    family: ['소문 (Gerücht)', '뉴스/보도 (Bericht)'],
+  },
+  시청: {
+    hanja: '視聽',
+    roots: [
+      { syllable: '시', char: '視', de: 'sehen, blicken, betrachten', kr: '볼 시' },
+      { syllable: '청', char: '聽', de: 'hören, zuhören', kr: '들을 청' },
+    ],
+    family: ['시력 (Sehkraft)', '시청자 (Zuschauer)', '청취 (Zuhören)'],
+  },
+  의료: {
+    hanja: '醫療',
+    roots: [
+      { syllable: '의', char: '醫', de: 'Medizin, Arzt, heilen', kr: '의원 의' },
+      { syllable: '료', char: '療', de: 'behandeln, kurieren', kr: '고칠 료' },
+    ],
+    family: ['의사 (Arzt)', '치료 (Therapie)', '진료 (ärztliche Untersuchung)'],
+  },
+  약품: {
+    hanja: '藥品',
+    roots: [
+      { syllable: '약', char: '藥', de: 'Medizin, Arznei, Heilmittel', kr: '약 약' },
+      { syllable: '품', char: '品', de: 'Ware, Artikel', kr: '물건 품' },
+    ],
+    family: ['약국 (Apotheke)', '치약 (Zahnpasta)'],
+  },
+  증상: {
+    hanja: '症狀',
+    roots: [
+      { syllable: '증', char: '症', de: 'Symptom, Krankheitserscheinung', kr: '증세 증' },
+      { syllable: '상', char: '狀', de: 'Zustand, Form, Schreiben', kr: '형상 상' },
+    ],
+    family: ['통증 (Schmerz)', '상태 (Zustand)'],
+  },
+  신체: {
+    hanja: '身體',
+    roots: [
+      { syllable: '신', char: '身', de: 'Körper, Leib, Person', kr: '몸 신' },
+      { syllable: '체', char: '體', de: 'Körper, Gestalt, System', kr: '몸 체' },
+    ],
+    family: ['체육 (Sportunterricht)', '체온 (Körpertemperatur)', '자신 (man selbst)'],
+  },
+  부모: {
+    hanja: '父母',
+    roots: [
+      { syllable: '부', char: '父', de: 'Vater', kr: '아버지 부' },
+      { syllable: '모', char: '母', de: 'Mutter', kr: '어머니 모' },
+    ],
+    family: ['학부모 (Eltern von Schülern)', '모국어 (Muttersprache)'],
+  },
+  자녀: {
+    hanja: '子女',
+    roots: [
+      { syllable: '자', char: '子', de: 'Kind, Sohn', kr: '아들 자' },
+      { syllable: '녀', char: '女', de: 'Tochter, Frau', kr: '여자 녀' },
+    ],
+    family: ['남자 (Mann)', '여자 (Frau)', '자식 (Kinder)'],
+  },
+  친구: {
+    hanja: '親舊',
+    roots: [
+      { syllable: '친', char: '親', de: 'vertraut, eng, Eltern', kr: '친할 친' },
+      { syllable: '구', char: '舊', de: 'alt, langjährig, ehemalig', kr: '예 구' },
+    ],
+    family: ['친절 (Freundlichkeit)', '친척 (Verwandte)'],
+  },
+  결혼: {
+    hanja: '結婚',
+    roots: [
+      { syllable: '결', char: '結', de: 'knüpfen, verbinden', kr: '맺을 결' },
+      { syllable: '혼', char: '婚', de: 'Heirat, Ehe', kr: '혼인할 혼' },
+    ],
+    family: ['약혼 (Verlobung)', '이혼 (Scheidung)', '신혼 (Flitterwochen)'],
+  },
+  청춘: {
+    hanja: '靑春',
+    roots: [
+      { syllable: '청', char: '靑', de: 'blau, grün, jugendlich', kr: '푸를 청' },
+      { syllable: '춘', char: '春', de: 'Frühling, Jugendzeit', kr: '봄 춘' },
+    ],
+    family: ['청소년 (Jugendliche)', '청년 (junger Mensch)'],
+  },
 };
 
 /**
- * High-frequency TOPIK Hanja Syllable Lexicon for automatic root recognition
+ * High-frequency TOPIK Hanja Syllable Lexicon (~165 roots) for automatic root recognition
  * on newly added custom Sino-Korean vocabulary.
  */
 const HANJA_SYLLABLE_FALLBACK: Record<string, HanjaRootSyllable> = {
+  // Bestehende Kernwurzeln
   학: { syllable: '학', char: '學', de: 'lernen, Wissenschaft', kr: '배울 학' },
   생: { syllable: '생', char: '生', de: 'Leben, geboren werden, Schüler', kr: '날 생' },
-  교: { syllable: '교', char: '校', de: 'Schule, prüfen', kr: '학교 교' },
-  원: { syllable: '원', char: '院', de: 'Institut, Einrichtung', kr: '집 원' },
-  문: { syllable: '문', char: '文', de: 'Schrift, Kultur', kr: '글월 문' },
-  화: { syllable: '화', char: '化', de: 'werden, Wandel', kr: '될 화' },
-  사: { syllable: '사', char: '社', de: 'Gesellschaft, Firma', kr: '모일 사' },
-  회: { syllable: '회', char: '會', de: 'Versammlung, treffen', kr: '모일 회' },
+  교: { syllable: '교', char: '校', de: 'Schule, Unterricht, prüfen', kr: '학교 교' },
+  원: { syllable: '원', char: '院', de: 'Institut, Einrichtung, Hof', kr: '집 원' },
+  문: { syllable: '문', char: '文', de: 'Schrift, Kultur, Text', kr: '글월 문' },
+  화: { syllable: '화', char: '化', de: 'werden, Wandel, verändern', kr: '될 화' },
+  사: { syllable: '사', char: '社', de: 'Gesellschaft, Firma, Gemeinschaft', kr: '모일 사' },
+  회: { syllable: '회', char: '會', de: 'Versammlung, treffen, Verein', kr: '모일 회' },
   인: { syllable: '인', char: '人', de: 'Mensch, Person', kr: '사람 인' },
-  국: { syllable: '국', char: '國', de: 'Land, Staat', kr: '나라 국' },
+  국: { syllable: '국', char: '國', de: 'Land, Staat, Nation', kr: '나라 국' },
   어: { syllable: '어', char: '語', de: 'Sprache, Wort', kr: '말씀 어' },
-  식: { syllable: '식', char: '食', de: 'Essen, Speise', kr: '밥 식' },
+  식: { syllable: '식', char: '食', de: 'Essen, Speise, Nahrung', kr: '밥 식' },
   실: { syllable: '실', char: '室', de: 'Raum, Zimmer', kr: '집 실' },
   도: { syllable: '도', char: '道', de: 'Weg, Provinz, Prinzip', kr: '길 도' },
-  서: { syllable: '서', char: '書', de: 'Buch, Schrift', kr: '글 서' },
-  관: { syllable: '관', char: '館', de: 'Gebäude, Halle', kr: '집 관' },
-  자: { syllable: '자', char: '自', de: 'selbst, von Natur aus', kr: '스스로 자' },
+  서: { syllable: '서', char: '書', de: 'Buch, Schrift, Dokument', kr: '글 서' },
+  관: { syllable: '관', char: '館', de: 'Gebäude, Halle, Beziehung', kr: '집 관' },
+  자: { syllable: '자', char: '自', de: 'selbst, von Natur aus, Person', kr: '스스로 자' },
   동: { syllable: '동', char: '動', de: 'bewegen, handeln', kr: '움직일 동' },
-  력: { syllable: '력', char: '力', de: 'Kraft, Fähigkeit', kr: '힘 력' },
-  심: { syllable: '심', char: '心', de: 'Herz, Geist', kr: '마음 심' },
-  발: { syllable: '발', char: '發', de: 'entfalten, aufbrechen', kr: '필 발' },
-  전: { syllable: '전', char: '展', de: 'ausbreiten, entwickeln', kr: '펼 전' },
-  해: { syllable: '해', char: '解', de: 'lösen, verstehen', kr: '풀 해' },
-  결: { syllable: '결', char: '決', de: 'entscheiden, klären', kr: '결단할 결' },
-  정: { syllable: '정', char: '定', de: 'festlegen, bestimmen', kr: '정할 정' },
-  한: { syllable: '한', char: '韓', de: 'Korea', kr: '한국 한' },
-  시: { syllable: '시', char: '時', de: 'Zeit, Stunde', kr: '때 시' },
-  간: { syllable: '간', char: '間', de: 'Zwischenraum, Intervall', kr: '사이 간' },
+  력: { syllable: '력', char: '力', de: 'Kraft, Fähigkeit, Energie', kr: '힘 력' },
+  심: { syllable: '심', char: '心', de: 'Herz, Geist, Zentrum', kr: '마음 심' },
+  발: { syllable: '발', char: '發', de: 'entfalten, aufbrechen, auslösen', kr: '필 발' },
+  전: { syllable: '전', char: '展', de: 'entwickeln, Strom (電), vor (前)', kr: '펼 전' },
+  해: { syllable: '해', char: '解', de: 'lösen, verstehen, Meer (海)', kr: '풀 해' },
+  결: { syllable: '결', char: '決', de: 'entscheiden, klären, binden (結)', kr: '결단할 결' },
+  정: { syllable: '정', char: '定', de: 'festlegen, Gefühl (情), Politik (政)', kr: '정할 정' },
+  한: { syllable: '한', char: '韓', de: 'Korea, Grenze (限)', kr: '한국 한' },
+  시: { syllable: '시', char: '時', de: 'Zeit, Stunde, Stadt (市)', kr: '때 시' },
+  간: { syllable: '간', char: '間', de: 'Zwischenraum, Zeitraum, Raum', kr: '사이 간' },
   병: { syllable: '병', char: '病', de: 'Krankheit, Leiden', kr: '병 병' },
-  은: { syllable: '은', char: '銀', de: 'Silber, Geld', kr: '은 은' },
-  행: { syllable: '행', char: '行', de: 'gehen, Handel treiben', kr: '다닐 행' },
-  진: { syllable: '진', char: '眞', de: 'wahr, echt', kr: '참 진' },
-  선: { syllable: '선', char: '先', de: 'zuerst, vorangehend', kr: '먼저 선' },
-  수: { syllable: '수', char: '手', de: 'Hand, Könner, Fachmann', kr: '손 수' },
-  공: { syllable: '공', char: '工', de: 'Arbeit, Fleiß', kr: '장인 공' },
-  부: { syllable: '부', char: '夫', de: 'Mann, Ausdauer', kr: '지아비 부' },
-  음: { syllable: '음', char: '音', de: 'Klang, Ton', kr: '소리 음' },
+  은: { syllable: '은', char: '銀', de: 'Silber, Geld, Bank', kr: '은 은' },
+  행: { syllable: '행', char: '行', de: 'gehen, handeln, durchführen', kr: '다닐 행' },
+  진: { syllable: '진', char: '眞', de: 'wahr, echt, vorrücken (進)', kr: '참 진' },
+  선: { syllable: '선', char: '先', de: 'zuerst, Linie (線), wählen (選)', kr: '먼저 선' },
+  수: { syllable: '수', char: '手', de: 'Hand, Wasser (水), Zahl (數)', kr: '손 수' },
+  공: { syllable: '공', char: '工', de: 'Arbeit, öffentlich (公), Luft (空)', kr: '장인 공' },
+  부: { syllable: '부', char: '部', de: 'Abteilung, Teil, Vater (父)', kr: '떼 부' },
+  음: { syllable: '음', char: '音', de: 'Klang, Ton, trinken (飮)', kr: '소리 음' },
   악: { syllable: '악', char: '樂', de: 'Musik, Freude', kr: '풍류 악' },
-  신: { syllable: '신', char: '新', de: 'neu, frisch', kr: '새 신' },
-  가: { syllable: '가', char: '歌', de: 'Lied, Gesang', kr: '노래 가' },
-  통: { syllable: '통', char: '通', de: 'durchgehen, verkehren', kr: '통할 통' },
-  출: { syllable: '출', char: '出', de: 'hinausgehen, herauskommen', kr: '날 출' },
+  신: { syllable: '신', char: '新', de: 'neu, Körper (身), glauben (信)', kr: '새 신' },
+  가: { syllable: '가', char: '家', de: 'Haus, Familie, Preis (價), Lied (歌)', kr: '집 가' },
+  통: { syllable: '통', char: '通', de: 'durchgehen, verkehren, Schmerz (痛)', kr: '통할 통' },
+  출: { syllable: '출', char: '出', de: 'hinausgehen, erscheinen', kr: '날 출' },
   입: { syllable: '입', char: '入', de: 'eintreten, hineingehen', kr: '들 입' },
-  구: { syllable: '구', char: '口', de: 'Mündung, Öffnung, Kopfzahl', kr: '입 구' },
-  직: { syllable: '직', char: '職', de: 'Beruf, Amt, Dienst', kr: '직분 직' },
-  업: { syllable: '업', char: '業', de: 'Gewerbe, Tätigkeit', kr: '업 업' },
-  필: { syllable: '필', char: '必', de: 'unbedingt, zwingend', kr: '반드시 필' },
-  요: { syllable: '요', char: '要', de: 'wichtig, fordern', kr: '요긴할 요' },
-  중: { syllable: '중', char: '重', de: 'schwer, gewichtig', kr: '무거울 중' },
-  유: { syllable: '유', char: '有', de: 'haben, vorhanden sein', kr: '있을 유' },
-  무: { syllable: '무', char: '無', de: 'ohne, nichts, fehlen', kr: '없을 무' },
-  명: { syllable: '명', char: '名', de: 'Name, Ruhm', kr: '이름 명' },
-  안: { syllable: '안', char: '案', de: 'Plan, Vorschlag', kr: '책상/생각 안' },
-  내: { syllable: '내', char: '內', de: 'innen, leiten', kr: '안 내' },
-  외: { syllable: '외', char: '外', de: 'außen, fremd', kr: '바깥 외' },
-  소: { syllable: '소', char: '紹', de: 'verknüpfen, fortführen', kr: '이었을 소' },
-  개: { syllable: '개', char: '介', de: 'vermitteln, dazwischen', kr: '끼일 개' },
-  연: { syllable: '연', char: '練', de: 'üben, stählen', kr: '익힐 련' },
-  습: { syllable: '습', char: '習', de: 'lernen, einüben', kr: '익힐 습' },
-  복: { syllable: '복', char: '復', de: 'wiederkehren, wiederholen', kr: '회복할 복' },
-  대: { syllable: '대', char: '大', de: 'groß, bedeutend', kr: '큰 대' },
-  소2: { syllable: '소', char: '小', de: 'klein', kr: '작을 소' },
-  당: { syllable: '당', char: '堂', de: 'Halle, Versammlungsraum', kr: '집 당' },
-  차: { syllable: '차', char: '車', de: 'Wagen, Fahrzeug', kr: '수레 차' },
-  점: { syllable: '점', char: '店', de: 'Laden, Geschäft', kr: '가게 점' },
+  구: { syllable: '구', char: '口', de: 'Öffnung, Ausgang, Bezirk (區)', kr: '입 구' },
+  직: { syllable: '직', char: '職', de: 'Beruf, Amt, direkt (直)', kr: '직분 직' },
+  업: { syllable: '업', char: '業', de: 'Gewerbe, Tätigkeit, Arbeit', kr: '업 업' },
+  필: { syllable: '필', char: '必', de: 'unbedingt, notwendig', kr: '반드시 필' },
+  요: { syllable: '요', char: '要', de: 'wichtig, erfordern, brauchen', kr: '요긴할 요' },
+  중: { syllable: '중', char: '中', de: 'Mitte, während, schwer/wichtig (重)', kr: '가운데 중' },
+  유: { syllable: '유', char: '有', de: 'haben, vorhanden sein, Grund (由)', kr: '있을 유' },
+  무: { syllable: '무', char: '無', de: 'ohne, nichts, Handel (貿)', kr: '없을 무' },
+  명: { syllable: '명', char: '名', de: 'Name, berühmt, hell/klar (明)', kr: '이름 명' },
+  안: { syllable: '안', char: '安', de: 'friedlich, sicher, Vorschlag (案)', kr: '편안 안' },
+  내: { syllable: '내', char: '內', de: 'innen, innerhalb', kr: '안 내' },
+  외: { syllable: '외', char: '外', de: 'außen, fremd, Ausland', kr: '바깥 외' },
+  소: { syllable: '소', char: '所', de: 'Ort, Stelle, klein (小)', kr: '바 소' },
+  개: { syllable: '개', char: '開', de: 'öffnen, beginnen, einzeln (個)', kr: '열 개' },
+  연: { syllable: '연', char: '然', de: 'so beschaffen, Natur, üben (練)', kr: '그러할 연' },
+  습: { syllable: '습', char: '習', de: 'lernen, einüben, Gewohnheit', kr: '익힐 습' },
+  복: { syllable: '복', char: '復', de: 'wiederholen, zurückkehren, Glück (福)', kr: '회복할 복' },
+  대: { syllable: '대', char: '大', de: 'groß, gegenüber (對), Ära (代)', kr: '큰 대' },
+  당: { syllable: '당', char: '堂', de: 'Halle, gerecht/passend (當)', kr: '집 당' },
+  차: { syllable: '차', char: '車', de: 'Fahrzeug, Unterschied (差)', kr: '수레 차' },
+  점: { syllable: '점', char: '店', de: 'Geschäft, Punkt/Aspekt (點)', kr: '가게 점' },
+
+  // === ~95 NEUE HOCHFREQUENTE TOPIK-WURZELN (ZUM 300+ SWEET SPOT) ===
+  일: { syllable: '일', char: '日', de: 'Tag, Sonne, Alltag', kr: '날 일' },
+  월: { syllable: '월', char: '月', de: 'Monat, Mond', kr: '달 월' },
+  년: { syllable: '년', char: '年', de: 'Jahr, Lebensalter', kr: '해 년' },
+  목: { syllable: '목', char: '木', de: 'Baum, Holz, Auge/Ziel (目)', kr: '나무 목' },
+  금: { syllable: '금', char: '金', de: 'Gold, Metall, Geld', kr: '쇠 금' },
+  토: { syllable: '토', char: '土', de: 'Erde, Boden, Land', kr: '흙 토' },
+  산: { syllable: '산', char: '山', de: 'Berg, produzieren/Geburt (産)', kr: '메 산' },
+  천: { syllable: '천', char: '川', de: 'Fluss, Himmel (天), Tausend (千)', kr: '내 천' },
+  방: { syllable: '방', char: '房', de: 'Zimmer, Richtung/Methode (方)', kr: '방 방' },
+  창: { syllable: '창', char: '窓', de: 'Fenster, erschaffen (創)', kr: '창문 창' },
+  층: { syllable: '층', char: '層', de: 'Stockwerk, Ebene, Schicht', kr: '층 층' },
+  계: { syllable: '계', char: '界', de: 'Welt, Bereich, Plan (計), Treppe (階)', kr: '지경 계' },
+  세: { syllable: '세', char: '世', de: 'Welt, Generation, Steuer (稅)', kr: '인간 세' },
+  민: { syllable: '민', char: '民', de: 'Volk, Bürger', kr: '백성 민' },
+  치: { syllable: '치', char: '治', de: 'regieren, heilen, Zahn (齒)', kr: '다스릴 치' },
+  경: { syllable: '경', char: '經', de: 'durchlaufen, Wirtschaft, Umgebung (境)', kr: '지날 경' },
+  제: { syllable: '제', char: '濟', de: 'Wirtschaft, herstellen (製), Ordnung (第)', kr: '건널 제' },
+  농: { syllable: '농', char: '農', de: 'Landwirtschaft, Bauer', kr: '농사 농' },
+  상: { syllable: '상', char: '商', de: 'Handel, einander (相), Zustand (狀)', kr: '장사 상' },
+  역: { syllable: '역', char: '驛', de: 'Bahnhof, Gebiet (域), Austausch (易)', kr: '역 역' },
+  송: { syllable: '송', char: '送', de: 'senden, schicken, übertragen', kr: '보낼 송' },
+  운: { syllable: '운', char: '運', de: 'bewegen, Transport, Glück', kr: '옮길 운' },
+  주: { syllable: '주', char: '主', de: 'Hauptsache, Woche (週), parken/wohnen (駐/住)', kr: '주인 주' },
+  지: { syllable: '지', char: '地', de: 'Erde, Ort, Papier (紙), wissen (知)', kr: '땅 지' },
+  군: { syllable: '군', char: '郡', de: 'Landkreis, Armee (軍)', kr: '고을 군' },
+  촌: { syllable: '촌', char: '村', de: 'Dorf, ländlich', kr: '마을 촌' },
+  섬: { syllable: '도', char: '島', de: 'Insel', kr: '섬 도' },
+  로: { syllable: '로', char: '路', de: 'Straße, Route, alt (老)', kr: '길 로' },
+  항: { syllable: '항', char: '港', de: 'Hafen, Luftfahrt (航)', kr: '항구 항' },
+  객: { syllable: '객', char: '客', de: 'Gast, Kunde, Passagier', kr: '손 객' },
+  숙: { syllable: '숙', char: '宿', de: 'übernachten, Unterkunft', kr: '잘 숙' },
+  박: { syllable: '박', char: '泊', de: 'übernachten, verweilen', kr: '머무를 박' },
+  건: { syllable: '건', char: '建', de: 'bauen, errichten, gesund (健)', kr: '세울 건' },
+  축: { syllable: '축', char: '築', de: 'bauen, feiern (祝)', kr: '쌓을 축' },
+  설: { syllable: '설', char: '設', de: 'einrichten, erklären (說)', kr: '베풀 설' },
+  비: { syllable: '비', char: '費', de: 'Kosten, vorbereiten (備), vergleichen (比)', kr: '쓸 비' },
+  기: { syllable: '기', char: '機', de: 'Maschine, Gelegenheit, Energie (氣), Gerät (器)', kr: '틀 기' },
+  재: { syllable: '재', char: '材', de: 'Material, Talent, existieren (在)', kr: '재목 재' },
+  영: { syllable: '영', char: '映', de: 'projizieren/Film, betreiben (營)', kr: '비칠 영' },
+  극: { syllable: '극', char: '劇', de: 'Drama, Theater, überwinden (克)', kr: '심할 극' },
+  예: { syllable: '예', char: '藝', de: 'Kunst, im Voraus (豫), Beispiel (例)', kr: '재주 예' },
+  술: { syllable: '술', char: '術', de: 'Technik, Kunst, Methode', kr: '재주 술' },
+  독: { syllable: '독', char: '讀', de: 'lesen, allein/unabhängig (獨)', kr: '읽을 독' },
+  청: { syllable: '청', char: '聽', de: 'zuhören, bitten (請), blau/Jugend (靑)', kr: '들을 청' },
+  매: { syllable: '매', char: '買', de: 'kaufen, verkaufen (賣), jeden (每)', kr: '살 매' },
+  품: { syllable: '품', char: '品', de: 'Ware, Produkt, Qualität', kr: '물건 품' },
+  질: { syllable: '질', char: '質', de: 'Qualität, Wesen, Frage', kr: '바탕 질' },
+  량: { syllable: '량', char: '量', de: 'Menge, Quantität, gut (良)', kr: '헤아릴 량' },
+  양: { syllable: '양', char: '量', de: 'Menge, Art und Weise (樣)', kr: '헤아릴 량' },
+  번: { syllable: '번', char: '番', de: 'Nummer, Reihe, Mal', kr: '차례 번' },
+  호: { syllable: '호', char: '號', de: 'Nummer, Name, gut/mögen (好)', kr: '이름 호' },
+  의: { syllable: '의', char: '醫', de: 'Medizin, Bedeutung/Sinn (意), Kleidung (衣)', kr: '의원 의' },
+  약: { syllable: '약', char: '藥', de: 'Medizin, versprechen (約), schwach (弱)', kr: '약 약' },
+  료: { syllable: '료', char: '療', de: 'behandeln/heilen, Gebühr/Material (料)', kr: '고칠 료' },
+  증: { syllable: '증', char: '症', de: 'Symptom, Beweis/Schein (證), zunehmen (增)', kr: '증세 증' },
+  체: { syllable: '체', char: '體', de: 'Körper, Gestalt, System', kr: '몸 체' },
+  두: { syllable: '두', char: '頭', de: 'Kopf, Spitze, Anfang', kr: '머리 두' },
+  이: { syllable: '이', char: '理', de: 'Prinzip/Grund, Nutzen (利), Ohr (耳)', kr: '다스릴 리' },
+  리: { syllable: '리', char: '理', de: 'Logik, ordnen, Vorteil (利)', kr: '다스릴 리' },
+  족: { syllable: '족', char: '族', de: 'Familie/Volk, Fuß/genügen (足)', kr: '겨레 족' },
+  남: { syllable: '남', char: '男', de: 'Mann, männlich, Süden (南)', kr: '사내 남' },
+  녀: { syllable: '녀', char: '女', de: 'Frau, weiblich, Tochter', kr: '여자 녀' },
+  여: { syllable: '여', char: '女', de: 'Frau, reisen (旅), übrig (餘)', kr: '여자 녀' },
+  모: { syllable: '모', char: '母', de: 'Mutter, sammeln (募), Aussehen (貌)', kr: '어머니 모' },
+  친: { syllable: '친', char: '親', de: 'Eltern, vertraut, eng', kr: '친할 친' },
+  우: { syllable: '우', char: '友', de: 'Freund, rechts (右), Regen (雨)', kr: '벗 우' },
+  애: { syllable: '애', char: '愛', de: 'Liebe, lieben, schätzen', kr: '사랑 애' },
+  혼: { syllable: '혼', char: '婚', de: 'Heirat, Ehe', kr: '혼인할 혼' },
+  노: { syllable: '노', char: '老', de: 'alt, sich bemühen (努), Zorn (怒)', kr: '늙을 로' },
+  춘: { syllable: '춘', char: '春', de: 'Frühling, Jugend', kr: '봄 춘' },
+  하: { syllable: '하', char: '夏', de: 'Sommer, unten (下), gratulieren (賀)', kr: '여름 하' },
+  추: { syllable: '추', char: '秋', de: 'Herbst, empfehlen/drängen (推)', kr: '가을 추' },
+  표: { syllable: '표', char: '表', de: 'ausdrücken, Oberfläche, Ticket (票)', kr: '겉 표' },
+  감: { syllable: '감', char: '感', de: 'Gefühl, empfinden, verringern (減)', kr: '느낄 감' },
+  성: { syllable: '성', char: '成', de: 'vollenden, gelingen, Charakter (性)', kr: '이룰 성' },
+  태: { syllable: '태', char: '態', de: 'Haltung, Zustand', kr: '모양 태' },
+  변: { syllable: '변', char: '變', de: 'verändern, Wandel', kr: '변할 변' },
+  유2: { syllable: '유', char: '維', de: 'bewahren, zusammenhalten', kr: '바 유' },
+  선2: { syllable: '선', char: '船', de: 'Schiff, Boot', kr: '배 선' },
+  교2: { syllable: '교', char: '橋', de: 'Brücke', kr: '다리 교' },
+  문2: { syllable: '문', char: '門', de: 'Tor, Tür, Pforte', kr: '문 문' },
+  화2: { syllable: '화', char: '火', de: 'Feuer, Brand, Dienstag', kr: '불 화' },
+  수2: { syllable: '수', char: '水', de: 'Wasser, Flüssigkeit, Mittwoch', kr: '물 수' },
+  공2: { syllable: '공', char: '空', de: 'Himmel, Luft, leer', kr: '빌 공' },
+  전2: { syllable: '전', char: '電', de: 'Elektrizität, Blitz', kr: '번개 전' },
+  해2: { syllable: '해', char: '海', de: 'Meer, Ozean', kr: '바다 해' },
+  매2: { syllable: '매', char: '賣', de: 'verkaufen, veräußern', kr: '팔 매' },
+  제2: { syllable: '제', char: '第', de: 'Ordnungszahl-Präfix, Stufe', kr: '차례 제' },
+  도2: { syllable: '도', char: '度', de: 'Grad, Maß, Mal', kr: '법도 도' },
+  수3: { syllable: '수', char: '輸', de: 'transportieren, befördern', kr: '실어낼 수' },
+  구2: { syllable: '구', char: '區', de: 'Bezirk, Zone, unterscheiden', kr: '구분할 구' },
+  경2: { syllable: '경', char: '京', de: 'Hauptstadt', kr: '서울 경' },
+  주2: { syllable: '주', char: '州', de: 'Provinz, Bundesstaat', kr: '고을 주' },
+  선3: { syllable: '선', char: '線', de: 'Linie, Gleis, Kabel', kr: '줄 선' },
+  계2: { syllable: '계', char: '階', de: 'Treppe, Stufe, Etage', kr: '섬돌 계' },
+  기2: { syllable: '기', char: '器', de: 'Gefäß, Gerät, Instrument', kr: '그릇 기' },
+  지2: { syllable: '지', char: '紙', de: 'Papier, Blatt', kr: '종이 지' },
+  통2: { syllable: '통', char: '痛', de: 'Schmerz, schmerzen', kr: '아플 통' },
+  안2: { syllable: '안', char: '顔', de: 'Gesicht, Miene', kr: '얼굴 안' },
+  이2: { syllable: '이', char: '耳', de: 'Ohr, Gehör', kr: '귀 이' },
+  치2: { syllable: '치', char: '齒', de: 'Zahn, Gebiss', kr: '이 치' },
+  족2: { syllable: '족', char: '足', de: 'Fuß, genügen, ausreichen', kr: '발 족' },
+  유3: { syllable: '유', char: '幼', de: 'jung, Kleinkind', kr: '어릴 유' },
+  동2: { syllable: '동', char: '冬', de: 'Winter', kr: '겨울 동' },
+  소2: { syllable: '소', char: '小', de: 'klein, gering', kr: '작을 소' },
 };
+
+/**
+ * Character-indexed map over all 305+ Hanja roots in the lexicon.
+ * Used when CSV uploads provide explicit Hanja in parentheses, e.g. "학교(學校)" or "경제(經濟)",
+ * and to find related word families dynamically.
+ */
+const HANJA_CHAR_MAP: Record<string, HanjaRootSyllable> = (() => {
+  const map: Record<string, HanjaRootSyllable> = {};
+  for (const root of Object.values(HANJA_SYLLABLE_FALLBACK)) {
+    if (!map[root.char]) {
+      map[root.char] = root;
+    }
+  }
+  for (const entry of Object.values(HANJA_WORD_DICT)) {
+    for (const root of entry.roots) {
+      if (!map[root.char]) {
+        map[root.char] = root;
+      }
+    }
+  }
+  return map;
+})();
+
+/**
+ * Finds up to 3 related compound words from HANJA_WORD_DICT that share at least one Hanja character.
+ */
+function findRelatedFamily(hanjaChars: string[], excludeWord: string): string[] {
+  const charSet = new Set(hanjaChars);
+  const related: string[] = [];
+  for (const [word, entry] of Object.entries(HANJA_WORD_DICT)) {
+    if (word === excludeWord || word.includes('(')) continue;
+    if (entry.roots.some((r) => charSet.has(r.char))) {
+      related.push(`${word} (${entry.hanja})`);
+      if (related.length >= 3) break;
+    }
+  }
+  return related;
+}
 
 /**
  * Looks up or derives the Hanja roots for a given Korean vocabulary item.
@@ -985,17 +1440,29 @@ export function getHanjaInfo(krWord: string, cat?: VocabCategory): HanjaWordEntr
 
     if (hangulChars.length === hanjaList.length) {
       const roots: HanjaRootSyllable[] = hangulChars.map((syl, i) => {
+        const ch = hanjaList[i];
+        const knownChar = HANJA_CHAR_MAP[ch];
         const fallback = HANJA_SYLLABLE_FALLBACK[syl];
+        if (knownChar) {
+          return {
+            syllable: syl,
+            char: ch,
+            de: knownChar.de,
+            kr: knownChar.kr,
+          };
+        }
         return {
           syllable: syl,
-          char: hanjaList[i],
-          de: fallback?.char === hanjaList[i] ? fallback.de : `Bedeutung von ${hanjaList[i]}`,
-          kr: fallback?.char === hanjaList[i] ? fallback.kr : `${hanjaList[i]}`,
+          char: ch,
+          de: fallback?.char === ch ? fallback.de : `Bedeutung von ${ch}`,
+          kr: fallback?.char === ch ? fallback.kr : `${ch}`,
         };
       });
+      const family = findRelatedFamily(hanjaList, hangul);
       return {
         hanja: hanjaChars,
         roots,
+        ...(family.length > 0 ? { family } : {}),
       };
     }
   }
@@ -1052,9 +1519,12 @@ export function getHanjaInfo(krWord: string, cat?: VocabCategory): HanjaWordEntr
     }
 
     if (matchedRoots.length >= 2) {
+      const hanjaChars = matchedRoots.map((r) => r.char);
+      const family = findRelatedFamily(hanjaChars, baseRoot);
       return {
-        hanja: matchedRoots.map((r) => r.char).join(''),
+        hanja: hanjaChars.join(''),
         roots: matchedRoots,
+        ...(family.length > 0 ? { family } : {}),
       };
     }
   }

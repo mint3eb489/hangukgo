@@ -15,7 +15,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 200;
     }
 
     function incoming() {
@@ -28,12 +28,12 @@ service cloud.firestore {
 
     // Validation for VocabFile
     function isValidVocabFile(data, userId) {
-      return data.id is string && data.id.size() <= 128
+      return data.id is string && data.id.size() <= 200
         && data.userId == userId
-        && data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 200
-        && data.content is string && data.content.size() <= 500000
+        && data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 300
+        && data.content is string && data.content.size() <= 900000
         && data.vocabCount is number && data.vocabCount >= 0
-        && data.topikLevel is string && data.topikLevel.size() <= 32
+        && data.topikLevel is string && data.topikLevel.size() <= 64
         && data.createdAt is string && data.createdAt.size() <= 64
         && data.updatedAt is string && data.updatedAt.size() <= 64
         && data.keys().hasAll(['id', 'userId', 'fileName', 'content', 'vocabCount', 'topikLevel', 'createdAt', 'updatedAt'])
@@ -42,19 +42,19 @@ service cloud.firestore {
 
     // Validation for CustomVocabItem (supporting optional english and german translations)
     function isValidCustomVocab(data, userId) {
-      return data.id is string && data.id.size() <= 128
+      return data.id is string && data.id.size() <= 200
         && data.userId == userId
-        && data.korean is string && data.korean.size() > 0 && data.korean.size() <= 200
-        && (!('german' in data) || (data.german is string && data.german.size() <= 500))
-        && (!('english' in data) || (data.english is string && data.english.size() <= 500))
+        && data.korean is string && data.korean.size() > 0 && data.korean.size() <= 500
+        && (!('german' in data) || (data.german is string && data.german.size() <= 1000))
+        && (!('english' in data) || (data.english is string && data.english.size() <= 1000))
         && (('german' in data && data.german.size() > 0) || ('english' in data && data.english.size() > 0))
-        && (!('hanja' in data) || (data.hanja is string && data.hanja.size() <= 50))
-        && data.category is string && data.category.size() <= 50
-        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 100))
-        && data.topikLevel is string && data.topikLevel.size() <= 32
-        && (!('exampleKorean' in data) || (data.exampleKorean is string && data.exampleKorean.size() <= 1000))
-        && (!('exampleGerman' in data) || (data.exampleGerman is string && data.exampleGerman.size() <= 1000))
-        && (!('exampleEnglish' in data) || (data.exampleEnglish is string && data.exampleEnglish.size() <= 1000))
+        && (!('hanja' in data) || (data.hanja is string && data.hanja.size() <= 300))
+        && data.category is string && data.category.size() <= 100
+        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 300))
+        && data.topikLevel is string && data.topikLevel.size() <= 64
+        && (!('exampleKorean' in data) || (data.exampleKorean is string && data.exampleKorean.size() <= 2000))
+        && (!('exampleGerman' in data) || (data.exampleGerman is string && data.exampleGerman.size() <= 2000))
+        && (!('exampleEnglish' in data) || (data.exampleEnglish is string && data.exampleEnglish.size() <= 2000))
         && data.createdAt is string && data.createdAt.size() <= 64
         && data.keys().hasAll(['id', 'userId', 'korean', 'category', 'topikLevel', 'createdAt'])
         && data.keys().hasOnly(['id', 'userId', 'korean', 'german', 'english', 'hanja', 'category', 'subcategory', 'topikLevel', 'exampleKorean', 'exampleGerman', 'exampleEnglish', 'createdAt']);
@@ -62,7 +62,7 @@ service cloud.firestore {
 
     // Validation for SrsRecord
     function isValidSrsRecord(data, userId) {
-      return data.id is string && data.id.size() <= 128
+      return data.id is string && data.id.size() <= 200
         && data.userId == userId
         && data.level is number && data.level >= 0 && data.level <= 5
         && data.nextReviewDate is number
@@ -83,10 +83,9 @@ service cloud.firestore {
         && incoming().id == vocabId;
       allow update: if isSignedIn()
         && isValidId(vocabId)
-        && isValidCustomVocab(incoming(), incoming().userId)
-        && incoming().id == existing().id
-        && incoming().createdAt == existing().createdAt;
-      allow delete: if isSignedIn() && isValidId(vocabId);
+        && isValidCustomVocab(incoming(), request.auth.uid)
+        && incoming().id == vocabId;
+      allow delete: if isSignedIn();
     }
 
     // 2. GLOBAL SHARED CSV / VOCAB FILES (Uploaded for the entire app)
@@ -99,10 +98,9 @@ service cloud.firestore {
         && incoming().id == fileId;
       allow update: if isSignedIn()
         && isValidId(fileId)
-        && isValidVocabFile(incoming(), incoming().userId)
-        && incoming().id == existing().id
-        && incoming().createdAt == existing().createdAt;
-      allow delete: if isSignedIn() && isValidId(fileId);
+        && isValidVocabFile(incoming(), request.auth.uid)
+        && incoming().id == fileId;
+      allow delete: if isSignedIn();
     }
 
     // 3. USER SUBCOLLECTIONS (Individual user accounts & isolated SRS progress)
@@ -123,7 +121,7 @@ service cloud.firestore {
           && incoming().id == existing().id
           && incoming().userId == existing().userId
           && incoming().createdAt == existing().createdAt;
-        allow delete: if isOwner(userId) && isValidId(fileId);
+        allow delete: if isOwner(userId);
       }
 
       // User's personal custom cards
@@ -140,7 +138,7 @@ service cloud.firestore {
           && incoming().id == existing().id
           && incoming().userId == existing().userId
           && incoming().createdAt == existing().createdAt;
-        allow delete: if isOwner(userId) && isValidId(vocabId);
+        allow delete: if isOwner(userId);
       }
 
       // Spaced Repetition Study Progress (STRICTLY INDIVIDUAL PER USER)
@@ -156,7 +154,7 @@ service cloud.firestore {
           && isValidSrsRecord(incoming(), userId)
           && incoming().id == existing().id
           && incoming().userId == existing().userId;
-        allow delete: if isOwner(userId) && isValidId(progressId);
+        allow delete: if isOwner(userId);
       }
     }
   }

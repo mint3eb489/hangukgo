@@ -3,6 +3,8 @@ import { X, Plus, RotateCcw, ChevronRight, LogOut } from 'lucide-react';
 import { AppLanguage, translations } from '../utils/translations';
 import { RamyeonPacketIcon } from './RamyeonPacketIcon';
 import { SojuBottleIcon } from './SojuBottleIcon';
+import { RetroTvIcon } from './RetroTvIcon';
+import { BunnyEarsIcon } from './BunnyEarsIcon';
 import { DancheongSettingsIcon } from './DancheongSettingsIcon';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { auth, signOutUser } from '../services/firebase';
@@ -19,6 +21,8 @@ interface ExtrasDrawerProps {
   ramyeonTimeLeft: number;
   onOpenRamyeon: () => void;
   onOpenSoju: () => void;
+  onOpenDrama: () => void;
+  onOpenBunny: () => void;
   onOpenAddVocab: () => void;
   onOpenSync?: () => void;
   onOpenReset: () => void;
@@ -36,6 +40,8 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
   ramyeonTimeLeft,
   onOpenRamyeon,
   onOpenSoju,
+  onOpenDrama,
+  onOpenBunny,
   onOpenAddVocab,
   onOpenSync,
   onOpenReset,
@@ -76,16 +82,9 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
           <div className="flex items-center justify-between pb-4 border-b border-border-card">
             <div className="flex items-center gap-3">
               <DancheongSettingsIcon className="w-8 h-8 shrink-0" />
-              <div>
-                <h2 className="text-lg font-bold text-ink tracking-tight">
-                  {isKr ? '도구 및 설정' : 'Extras & Einstellungen'}
-                </h2>
-                <p className="text-xs text-muted mt-0.5">
-                  {isKr
-                    ? '한국 문화 미니게임, 언어 및 데이터 관리'
-                    : 'Kultur-Extras, Sprache & Datensicherung'}
-                </p>
-              </div>
+              <h2 className="text-lg font-bold text-ink tracking-tight">
+                {isKr ? '도구 및 설정' : 'Extras & Einstellungen'}
+              </h2>
             </div>
             <button
               type="button"
@@ -100,14 +99,14 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
             </button>
           </div>
 
-          {/* Section 1: Korean Cultural Extras (Ramyeon & Soju) */}
+          {/* Section 1: Korean Cultural Extras (Ramyeon, Soju, Drama & Bunny) */}
           <div className="space-y-2.5">
             <h3 className="text-xs font-semibold text-muted tracking-wide">
               {isKr ? '한국 문화 스페셜' : 'Koreanische Kultur-Extras'}
             </h3>
 
-            <div className="grid grid-cols-1 gap-2.5">
-              {/* Ramyeon Timer Card */}
+            <div className="grid grid-cols-4 gap-2">
+              {/* 1. Ramyeon */}
               <button
                 type="button"
                 onClick={() => {
@@ -115,32 +114,22 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
                   onClose();
                   onOpenRamyeon();
                 }}
-                className="w-full p-3.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex items-center justify-between gap-3 text-left group"
+                className="p-2.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex flex-col items-center justify-center gap-1.5 text-center group relative"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-dancheong/10 border border-dancheong/25 flex items-center justify-center shrink-0">
-                    <RamyeonPacketIcon className="w-7 h-7" idPrefix="drawer-ramyeon" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-ink flex items-center gap-2">
-                      <span>{isKr ? '신라면 타이머' : 'Ramyeon-Timer'}</span>
-                      {isRamyeonRunning && (
-                        <span className="text-xs font-mono tabular-nums font-bold text-dancheong">
-                          {formatTime(ramyeonTimeLeft)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted truncate">
-                      {isKr
-                        ? '완벽한 면발을 위한 4분 알람'
-                        : '4-Minuten-Timer für koreanische Nudeln'}
-                    </p>
-                  </div>
+                <div className="w-10 h-10 rounded-xl bg-dancheong/10 border border-dancheong/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <RamyeonPacketIcon className="w-6 h-6" idPrefix="drawer-ramyeon" />
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted group-hover:text-ink group-hover:translate-x-0.5 transition shrink-0" />
+                <span className="font-bold text-xs text-ink truncate w-full">
+                  {isKr ? '라면' : 'Ramyeon'}
+                </span>
+                {isRamyeonRunning && (
+                  <span className="text-[10px] font-mono tabular-nums font-bold text-dancheong leading-none">
+                    {formatTime(ramyeonTimeLeft)}
+                  </span>
+                )}
               </button>
 
-              {/* Soju Roulette Card */}
+              {/* 2. Soju */}
               <button
                 type="button"
                 onClick={() => {
@@ -148,24 +137,50 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
                   onClose();
                   onOpenSoju();
                 }}
-                className="w-full p-3.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex items-center justify-between gap-3 text-left group"
+                className="p-2.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex flex-col items-center justify-center gap-1.5 text-center group"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-celadon/12 border border-celadon/25 flex items-center justify-center shrink-0">
-                    <SojuBottleIcon className="w-7 h-7" idPrefix="drawer-soju" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-ink">
-                      {isKr ? '소주 룰렛 (랜덤 학습)' : 'Soju-Roulette'}
-                    </div>
-                    <p className="text-xs text-muted truncate">
-                      {isKr
-                        ? '모드와 카테고리를 무작위로 추첨'
-                        : 'Zufallsgenerator für Modus & Thema'}
-                    </p>
-                  </div>
+                <div className="w-10 h-10 rounded-xl bg-celadon/12 border border-celadon/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <SojuBottleIcon className="w-6 h-6" idPrefix="drawer-soju" />
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted group-hover:text-ink group-hover:translate-x-0.5 transition shrink-0" />
+                <span className="font-bold text-xs text-ink truncate w-full">
+                  {isKr ? '소주' : 'Soju'}
+                </span>
+              </button>
+
+              {/* 3. Drama */}
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  onClose();
+                  onOpenDrama();
+                }}
+                className="p-2.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex flex-col items-center justify-center gap-1.5 text-center group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-obangBlue/12 border border-obangBlue/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <RetroTvIcon className="w-6 h-6" idPrefix="drawer-drama" />
+                </div>
+                <span className="font-bold text-xs text-ink truncate w-full">
+                  {isKr ? '드라마' : 'Drama'}
+                </span>
+              </button>
+
+              {/* 4. Bunny / 토끼 */}
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  onClose();
+                  onOpenBunny();
+                }}
+                className="p-2.5 rounded-2xl hanji-card hover:bg-surface/70 transition flex flex-col items-center justify-center gap-1.5 text-center group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-ochre/12 border border-ochre/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <BunnyEarsIcon className="w-6 h-6" idPrefix="drawer-bunny" />
+                </div>
+                <span className="font-bold text-xs text-ink truncate w-full">
+                  {isKr ? '토끼' : 'Bunny'}
+                </span>
               </button>
             </div>
           </div>
@@ -179,13 +194,8 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
             <div className="rounded-2xl hanji-card">
               {/* Language Row */}
               <div className="p-3.5 flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-ink">
-                    {isKr ? '앱 인터페이스 언어' : 'App-Sprache'}
-                  </div>
-                  <p className="text-xs text-muted">
-                    {isKr ? '한국어 (한글 UI)' : 'Deutsch (Standard)'}
-                  </p>
+                <div className="text-sm font-semibold text-ink">
+                  {isKr ? '앱 인터페이스 언어' : 'App-Sprache'}
                 </div>
                 <LanguageToggleButton
                   language={language}
@@ -218,15 +228,8 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
                   <div className="w-9 h-9 rounded-xl bg-celadon/15 text-celadon flex items-center justify-center shrink-0">
                     <Plus className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-ink">
-                      {t.actions.addVocab}
-                    </div>
-                    <p className="text-xs text-muted">
-                      {isKr
-                        ? `단어 직접 추가, CSV 가져오기 & Firebase 클라우드 (${customCount}개)`
-                        : `Vokabeln, CSV & Firebase Cloud-Datenbank (${customCount} eigene)`}
-                    </p>
+                  <div className="text-sm font-semibold text-ink">
+                    {t.actions.addVocab}
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted shrink-0" />
@@ -245,15 +248,8 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
                   <div className="w-9 h-9 rounded-xl bg-dancheong/12 text-dancheong flex items-center justify-center shrink-0">
                     <RotateCcw className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-dancheong">
-                      {t.actions.resetProgress}
-                    </div>
-                    <p className="text-xs text-muted">
-                      {isKr
-                        ? '모든 SRS 복습 기록 초기화'
-                        : 'Alle SRS-Wiederholungsstufen zurücksetzen'}
-                    </p>
+                  <div className="text-sm font-semibold text-dancheong">
+                    {t.actions.resetProgress}
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-dancheong/60 group-hover:translate-x-0.5 transition shrink-0" />

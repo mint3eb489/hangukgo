@@ -24,6 +24,7 @@ import {
   KeyRound,
   Plus,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import {
   auth,
@@ -40,6 +41,7 @@ import {
   clearAllCustomVocabFromCloud,
   fetchUserCsvFiles,
   deleteCsvFileFromCloud,
+  deleteCsvFileAndVocabFromCloud,
   syncAllToCloud,
   loadAllFromCloud,
   parseVocabCsv,
@@ -60,6 +62,7 @@ export interface SyncModalProps {
   onAddVocab: (newItems: VocabItem[], targetLevel: TopikLevel) => void;
   onImportSync: (srsMap: SrsMap, customVocab: VocabItem[]) => void;
   onClearCustom: () => void;
+  onDeleteVocabBatch?: (deletedIds: string[]) => void;
 }
 
 export const SyncModal: React.FC<SyncModalProps> = ({
@@ -73,6 +76,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   onAddVocab,
   onImportSync,
   onClearCustom,
+  onDeleteVocabBatch,
 }) => {
   const t = translations[lang];
   const isKr = lang === 'kr';
@@ -83,6 +87,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [syncLoading, setSyncLoading] = useState(false);
   const [cloudFiles, setCloudFiles] = useState<VocabFileRecord[]>([]);
 
+  // In-app Delete Confirmation States (replaces window.confirm)
+  const [fileToDelete, setFileToDelete] = useState<VocabFileRecord | null>(null);
+  const [deleteAssociatedVocabs, setDeleteAssociatedVocabs] = useState(true);
+  const [deletingFile, setDeletingFile] = useState(false);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+
   // Email / Password Form State (for when not logged in)
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -92,7 +103,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   // Tab 1: Single Vocab Form State
   const [singleLevel, setSingleLevel] = useState<TopikLevel>(currentLevel);
   const [singleCat, setSingleCat] = useState<VocabCategory>('noun');
-  const [singleSub, setSingleSub] = useState('Eigene Vokabeln');
+  const [singleSub, setSingleSub] = useState('Allgemein');
   const [singleKr, setSingleKr] = useState('');
   const [singleDe, setSingleDe] = useState('');
   const [singleEn, setSingleEn] = useState('');
@@ -104,9 +115,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   // Tab 2: Bulk / CSV / File State
   const [bulkLevel, setBulkLevel] = useState<TopikLevel>(currentLevel);
   const [bulkCat, setBulkCat] = useState<VocabCategory>('noun');
-  const [bulkSub, setBulkSub] = useState('Eigene Vokabeln');
+  const [bulkSub, setBulkSub] = useState('Allgemein');
   const [bulkText, setBulkText] = useState('');
   const [bulkFileName, setBulkFileName] = useState('');
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tab 4: Manual Code State
@@ -320,29 +332,123 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   // ----------------------------------------------------
   // TAB 2: IMPORT CSV / FILE / TEXT TO FIREBASE & APP
   // ----------------------------------------------------
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const formatFileNameToSubcategory = (name: string): string => {
+    return (
+      name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[_-]+/g, ' ')
+        .trim() || 'Allgemein'
+    );
+  };
 
-    const cleanName = file.name.replace(/\.[^/.]+$/, '');
-    if (cleanName) {
-      setBulkSub(cleanName);
+  const processFiles = (fileList: FileList | File[]) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    hapticTap();
+
+    if (files.length === 1) {
+      const file = files[0];
+      const cleanSub = formatFileNameToSubcategory(file.name);
+      setBulkSub(cleanSub);
       setBulkFileName(file.name);
-    }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setBulkText(content || '');
-      setFeedback({
-        type: 'info',
-        message: isKr
-          ? `„${file.name}“ 파일이 로드되었습니다. 아래 버튼을 눌러 Firebase에 저장하세요.`
-          : `Datei „${file.name}“ geladen. Klicke unten auf „In Firebase speichern & importieren“.`,
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = (event.target?.result as string) || '';
+        setBulkText(content);
+        const preview = parseVocabCsv(content, bulkLevel, cleanSub, bulkCat);
+        const subs = Array.from(new Set(preview.map((i) => i.sub)));
+        setFeedback({
+          type: 'info',
+          message: isKr
+            ? `„${file.name}“ 로드됨 (${preview.length}개 단어, ${subs.length}개 세부 주제). 아래 버튼을 눌러 저장하세요.`
+            : `„${file.name}“ geladen (${preview.length} Vokabeln in ${subs.length} ${subs.length === 1 ? 'Unterkategorie' : 'Unterkategorien'}: ${subs.slice(0, 3).join(', ')}).`,
+        });
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      // Multiple files dropped at once
+      const names = files.map((f) => f.name).join(', ');
+      setBulkFileName(`${files.length} Dateien (${names})`);
+      setBulkSub(formatFileNameToSubcategory(files[0].name));
+
+      Promise.all(
+        files.map(
+          (file) =>
+            new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const raw = ((ev.target?.result as string) || '').trim();
+                const topicFromFile = formatFileNameToSubcategory(file.name);
+                // Prepend a Markdown heading with the file's topic if it doesn't already start with one
+                if (raw && !raw.startsWith('#')) {
+                  resolve(`# ${topicFromFile}\n${raw}`);
+                } else {
+                  resolve(raw);
+                }
+              };
+              reader.onerror = () => resolve('');
+              reader.readAsText(file, 'UTF-8');
+            })
+        )
+      ).then((contents) => {
+        const combined = contents.filter(Boolean).join('\n\n');
+        setBulkText(combined);
+        const preview = parseVocabCsv(combined, bulkLevel, 'Allgemein', bulkCat);
+        const subs = Array.from(new Set(preview.map((i) => i.sub)));
+        setFeedback({
+          type: 'info',
+          message: isKr
+            ? `${files.length}개 파일 로드됨 (${preview.length}개 단어, ${subs.length}개 세부 주제)`
+            : `${files.length} Dateien geladen (${preview.length} Vokabeln in ${subs.length} Unterkategorien). Klicke unten auf Speichern.`,
+        });
       });
-    };
-    reader.readAsText(file, 'UTF-8');
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
+    }
     e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDraggingFile) {
+      setIsDraggingFile(true);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only reset if leaving the dropzone container itself
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDraggingFile(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    } else {
+      const droppedText = e.dataTransfer.getData('text/plain');
+      if (droppedText && droppedText.trim()) {
+        setBulkText(droppedText);
+      }
+    }
   };
 
   const insertSampleFormat = (type: 'csv' | 'md' = 'csv') => {
@@ -350,7 +456,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       const mdSample = [
         '# TOPIK Lektion: Wichtige Verben & Nomen',
         '',
-        '| Korean | Deutsch | English | Kategorie | Thema | Beispielsatz (KR) | Beispiel (DE) | Example (EN) |',
+        '| Korean | Deutsch | English | Wortart | Unterkategorie | Beispielsatz (KR) | Beispiel (DE) | Example (EN) |',
         '| --- | --- | --- | --- | --- | --- | --- | --- |',
         '| 극복하다 | überwinden | overcome | verb | Alltag | 어려움을 극복했어요. | Ich habe die Schwierigkeiten überwunden. | I overcame the difficulties. |',
         '| 적응하다 | sich anpassen | adapt / adjust | verb | Alltag | 새로운 환경에 적응했어요. | Ich habe mich an die neue Umgebung angepasst. | I adapted to the new environment. |',
@@ -361,35 +467,43 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       setBulkFileName('vokabeln_beispiel.md');
     } else {
       const csvSample = [
-        '# Lektion: Alltag & Verben',
-        '극복하다 ; überwinden / bewältigen ; overcome ; 어려움을 극복했어요. ; Ich habe die Schwierigkeiten überwunden. ; I overcame the difficulties.',
-        '적응하다 ; sich anpassen / eingewöhnen ; adapt / adjust ; 새로운 환경에 적응했어요. ; Ich habe mich an die neue Umgebung angepasst. ; I adapted to the new environment.',
-        '고민 ; Sorge / Grübelei ; worry / concern ; 요즘 고민이 많아요. ; Ich mache mir viele Sorgen. ; I have lots of worries.',
-        '행복 ; Glück / Freude ; happiness / joy ; 행복한 하루 보내세요! ; Hab einen glücklichen Tag! ; Have a happy day!',
+        'Koreanisch;Deutsch;Englisch;Wortart;Unterkategorie;Beispiel KR;Beispiel DE;Beispiel EN',
+        '극복하다;überwinden / bewältigen;overcome;verb;Alltag;어려움을 극복했어요.;Ich habe die Schwierigkeiten überwunden.;I overcame the difficulties.',
+        '적응하다;sich anpassen / eingewöhnen;adapt / adjust;verb;Alltag;새로운 환경에 적응했어요.;Ich habe mich an die neue Umgebung angepasst.;I adapted to the new environment.',
+        '고민;Sorge / Grübelei;worry / concern;noun;Gefühle;요즘 고민이 많아요.;Ich mache mir viele Sorgen.;I have lots of worries.',
+        '행복;Glück / Freude;happiness / joy;noun;Gefühle;행복한 하루 보내세요!;Hab einen glücklichen Tag!;Have a happy day!',
       ].join('\n');
       setBulkText(csvSample);
       setBulkFileName('vokabeln_beispiel.csv');
     }
   };
 
-  const normalizeCategory = (rawCat?: string, fallback: VocabCategory = 'noun'): VocabCategory => {
-    if (!rawCat) return fallback;
-    const c = rawCat.toLowerCase().trim();
-    if (c.includes('verb') || c.includes('동사')) return 'verb';
-    if (c.includes('gramm') || c.includes('문법')) return 'grammar';
-    if (c.includes('noun') || c.includes('nomen') || c.includes('명사')) return 'noun';
-    return fallback;
+  // Live preview of parsed items from bulkText
+  const bulkPreviewItems = parseVocabCsv(
+    bulkText,
+    bulkLevel,
+    bulkSub.trim() || 'Allgemein',
+    bulkCat
+  );
+  const bulkPreviewSubcategories = Array.from(
+    bulkPreviewItems.reduce((acc, item) => {
+      const s = item.sub || 'Allgemein';
+      acc.set(s, (acc.get(s) || 0) + 1);
+      return acc;
+    }, new Map<string, number>())
+  );
+  const bulkPreviewCounts = {
+    noun: bulkPreviewItems.filter((i) => i.cat === 'noun').length,
+    verb: bulkPreviewItems.filter((i) => i.cat === 'verb').length,
+    grammar: bulkPreviewItems.filter((i) => i.cat === 'grammar').length,
   };
 
   const handleBulkImportAndCloudSave = async () => {
-    const rawItems = parseVocabCsv(bulkText, bulkLevel);
-    // Apply user selected subcategory or category when not specified in file
-    const items = rawItems.map((item) => ({
-      ...item,
-      sub: item.sub === 'Import' || !item.sub ? (bulkSub.trim() || 'Eigene Vokabeln') : item.sub,
-      cat: item.cat || bulkCat,
-      level: item.level || bulkLevel,
-    }));
+    const fallbackSubName =
+      bulkSub.trim() ||
+      (bulkFileName ? formatFileNameToSubcategory(bulkFileName) : 'Allgemein');
+
+    const items = parseVocabCsv(bulkText, bulkLevel, fallbackSubName, bulkCat);
 
     if (items.length === 0) {
       setFeedback({
@@ -406,24 +520,25 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     setFeedback(null);
 
     try {
-      const fileName = bulkFileName.trim() || `${bulkSub.replace(/\s+/g, '_')}_${Date.now()}.csv`;
+      const fileName =
+        bulkFileName.trim() || `${fallbackSubName.replace(/\s+/g, '_')}_${Date.now()}.csv`;
 
-      // 1. Save to Firebase Cloud (both raw file & individual customVocab documents)
+      let finalItems = items;
+      // 1. Save to Firebase Cloud (upserts existing words so subcategories update cleanly!)
       if (currentUser) {
-        await saveMultipleVocabToCloud(items, bulkText, fileName, bulkLevel);
+        finalItems = await saveMultipleVocabToCloud(items, bulkText, fileName, bulkLevel);
         await loadCloudFiles();
       }
 
-      // 2. Add to active learning state
-      onAddVocab(items, bulkLevel);
+      // 2. Add/update active learning state
+      onAddVocab(finalItems, bulkLevel);
 
+      const detectedSubs = Array.from(new Set(finalItems.map((i) => i.sub)));
       setFeedback({
         type: 'success',
         message: isKr
-          ? `✓ ${items.length}개 단어가 Firebase 클라우드 및 ${bulkLevel} 덱에 저장되었습니다!`
-          : currentUser
-          ? `✓ ${items.length} neue Vokabeln in Firebase gespeichert & zu ${bulkLevel} hinzugefügt!`
-          : `✓ ${items.length} neue Vokabeln zu ${bulkLevel} hinzugefügt (Melde dich an, um sie in Firebase zu sichern).`,
+          ? `✓ ${finalItems.length}개 단어가 ${detectedSubs.length}개 세부 주제(${detectedSubs.slice(0, 3).join(', ')})로 저장되었습니다!`
+          : `✓ ${finalItems.length} Vokabeln in ${detectedSubs.length} ${detectedSubs.length === 1 ? 'Unterkategorie' : 'Unterkategorien'} (${detectedSubs.slice(0, 4).join(', ')}) gespeichert!`,
       });
 
       setBulkText('');
@@ -500,54 +615,89 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
   };
 
-  const handleDeleteCloudFile = async (fileId: string, name: string) => {
-    if (
-      !confirm(
-        isKr
-          ? `„${name}“ 파일을 Firebase에서 삭제하시겠습니까?`
-          : `Datei „${name}“ aus Firebase löschen?`
-      )
-    ) {
-      return;
-    }
+  const handleReparseCloudFile = async (file: VocabFileRecord) => {
+    if (!file.content) return;
     hapticTap();
+    setSyncLoading(true);
+    setFeedback(null);
     try {
-      await deleteCsvFileFromCloud(fileId);
-      await loadCloudFiles();
+      const fallbackSub = formatFileNameToSubcategory(file.fileName);
+      const level = (file.topikLevel === 'TOPIK II' ? 'TOPIK II' : 'TOPIK I') as TopikLevel;
+      const items = parseVocabCsv(file.content, level, fallbackSub, 'noun');
+      if (items.length === 0) {
+        setFeedback({
+          type: 'error',
+          message: 'Keine gültigen Vokabeln in der gespeicherten Datei gefunden.',
+        });
+        return;
+      }
+      const updatedItems = await saveMultipleVocabToCloud(items, undefined, undefined, level);
+      onAddVocab(updatedItems, level);
+      const subs = Array.from(new Set(updatedItems.map((i) => i.sub)));
       setFeedback({
-        type: 'info',
-        message: isKr ? '파일이 삭제되었습니다.' : `Datei „${name}“ gelöscht.`,
+        type: 'success',
+        message: `✓ „${file.fileName}“ neu eingelesen: ${updatedItems.length} Vokabeln in ${subs.length} Unterkategorien (${subs.slice(0, 4).join(', ')}) aktualisiert!`,
       });
-    } catch {
+    } catch (err) {
       setFeedback({
         type: 'error',
-        message: isKr ? '삭제 실패' : 'Fehler beim Löschen.',
+        message: err instanceof Error ? err.message : 'Fehler beim Aktualisieren.',
       });
+    } finally {
+      setSyncLoading(false);
     }
   };
 
-  const handleClearAllCustom = async () => {
-    if (
-      !confirm(
-        isKr
-          ? `모든 사용자 지정 단어(${customVocab.length}개)를 삭제하시겠습니까?`
-          : `Alle ${customVocab.length} eigenen Vokabeln aus der App & Firebase löschen?`
-      )
-    ) {
-      return;
-    }
+  const handleConfirmDeleteFile = async () => {
+    if (!fileToDelete) return;
     hapticTap();
+    setDeletingFile(true);
+    setFeedback(null);
+    try {
+      const res = await deleteCsvFileAndVocabFromCloud(fileToDelete, deleteAssociatedVocabs);
+      if (res.deletedIds && res.deletedIds.length > 0) {
+        onDeleteVocabBatch?.(res.deletedIds);
+      }
+      await loadCloudFiles();
+      setFeedback({
+        type: 'info',
+        message: isKr
+          ? `„${fileToDelete.fileName}“ 파일 삭제 완료${res.deletedVocabCount > 0 ? ` (${res.deletedVocabCount}개 단어 삭제됨)` : ''}`
+          : `Datei „${fileToDelete.fileName}“ gelöscht${res.deletedVocabCount > 0 ? ` (${res.deletedVocabCount} Vokabeln entfernt)` : ''}.`,
+      });
+      setFileToDelete(null);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : (isKr ? '삭제 실패' : 'Fehler beim Löschen.'),
+      });
+    } finally {
+      setDeletingFile(false);
+    }
+  };
+
+  const handleConfirmClearAll = async () => {
+    hapticTap();
+    setClearingAll(true);
+    setFeedback(null);
     try {
       if (currentUser) {
         await clearAllCustomVocabFromCloud();
       }
       onClearCustom();
+      await loadCloudFiles();
       setFeedback({
         type: 'info',
-        message: isKr ? '모든 사용자 단어가 삭제되었습니다.' : 'Alle eigenen Vokabeln wurden gelöscht.',
+        message: isKr ? '모든 단어와 파일이 삭제되었습니다.' : 'Alle eigenen Vokabeln & Cloud-Dateien wurden gelöscht.',
       });
+      setShowClearAllConfirm(false);
     } catch (err) {
-      console.warn('Clear error:', err);
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : (isKr ? '삭제 실패' : 'Fehler beim Löschen.'),
+      });
+    } finally {
+      setClearingAll(false);
     }
   };
 
@@ -596,7 +746,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 md:p-4 z-50">
-      <div className="bg-hanji border border-border-card rounded-2xl max-w-xl w-full p-4 md:p-6 shadow-xl space-y-4 animate-pop max-h-[92vh] flex flex-col font-sans">
+      <div className="bg-hanji border border-border-card rounded-2xl max-w-xl w-full p-4 md:p-6 shadow-xl space-y-4 animate-pop max-h-[92vh] flex flex-col font-sans relative overflow-hidden">
         {/* HEADER WITH UNIFIED TITLE & FIREBASE CLOUD BADGE */}
         <div className="flex items-center justify-between border-b border-border-card pb-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -958,7 +1108,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 {customVocab.length > 0 ? (
                   <button
                     type="button"
-                    onClick={handleClearAllCustom}
+                    onClick={() => setShowClearAllConfirm(true)}
                     className="text-xs text-muted hover:text-dancheong underline transition flex items-center gap-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1047,30 +1197,51 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 </div>
               </div>
 
-              {/* File Upload Zone */}
+              {/* File Upload Zone with Drag & Drop */}
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple
                 accept=".csv,.txt,.tsv,.json,.md"
                 onChange={handleFileSelect}
                 className="hidden"
               />
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border-card hover:border-celadon rounded-xl p-4 text-center cursor-pointer transition bg-surface/50 hover:bg-surface flex flex-col items-center justify-center gap-1"
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 select-none ${
+                  isDraggingFile
+                    ? 'border-celadon bg-celadon/15 scale-[1.01] shadow-md'
+                    : 'border-border-card hover:border-celadon bg-surface/50 hover:bg-surface'
+                }`}
               >
-                <UploadCloud className="w-6 h-6 text-celadon" />
+                <UploadCloud
+                  className={`w-7 h-7 transition-transform ${
+                    isDraggingFile ? 'text-celadon scale-110 animate-bounce' : 'text-celadon'
+                  }`}
+                />
                 <div className="text-xs font-bold text-ink">
-                  {bulkFileName ? (
+                  {isDraggingFile ? (
+                    <span className="text-celadon">
+                      {isKr
+                        ? '여기에 파일을 놓으세요 (Drag & Drop)...'
+                        : 'Dateien jetzt hier loslassen (Drag & Drop)...'}
+                    </span>
+                  ) : bulkFileName ? (
                     <span className="text-celadon underline">{bulkFileName}</span>
                   ) : isKr ? (
-                    'CSV / TSV / JSON / MD 파일 선택'
+                    '파일을 이곳으로 끌어다 놓거나 클릭하여 선택 (.csv, .md, .tsv, .txt, .json)'
                   ) : (
-                    'Datei auswählen (.csv, .tsv, .txt, .json, .md)'
+                    'Dateien hierher ziehen (Drag & Drop) oder klicken (.csv, .md, .tsv, .txt, .json)'
                   )}
                 </div>
                 <div className="text-[11px] text-muted">
-                  {isKr ? '또는 아래 텍스트 상자에 직접 붙여넣기' : 'oder Text direkt unten einfügen'}
+                  {isKr
+                    ? '여러 파일을 한 번에 끌어다 놓거나 아래 텍스트 상자에 붙여넣을 수 있습니다'
+                    : 'Auch mehrere Dateien gleichzeitig möglich – oder Text direkt unten einfügen'}
                 </div>
               </div>
 
@@ -1103,13 +1274,46 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
                   rows={5}
-                  placeholder={`Format 1 - CSV/Semikolon (Koreanisch ; Deutsch ; Englisch ; Beispielsätze):\n극복하다 ; überwinden ; overcome ; 어려움을 극복했어요. ; Ich habe die Schwierigkeiten überwunden. ; I overcame the difficulties.\n\nFormat 2 - Markdown (.md) Tabelle:\n| Korean | Deutsch | English | Kategorie | Thema |\n| 행복 | Glück | happiness | noun | Gefühle |`}
+                  placeholder={`Format 1 - CSV mit Spaltenüberschrift:\nKoreanisch;Deutsch;Englisch;Wortart;Unterkategorie\n극복하다;überwinden;overcome;verb;Alltag\n\nFormat 2 - Markdown (.md) mit # Unterkategorie:\n# Essen & Kultur\n| Korean | Deutsch | English | Wortart |\n| 김치 | Kimchi | kimchi | noun |`}
                   className="w-full bg-card border border-border-card rounded-xl p-3 text-xs font-mono text-ink focus:outline-none focus:border-celadon resize-none leading-relaxed"
                 />
                 <p className="text-[10px] text-muted mt-1 leading-normal">
-                  Unterstützt CSV, Semikolon (;), Tabulator, Markdown-Tabellen (.md) und JSON. Englische Übersetzungen (English) werden erkannt und in der gesamten App gespeichert.
+                  <strong>Tipp für Unterkategorien:</strong> Nutze eine Spalte namens <code>Unterkategorie</code>, <code>Thema</code> oder <code>Kategorie</code> in deiner CSV, oder schreibe <code># Themenname</code> (Markdown-Überschrift) über einen Abschnitt. Fehlt beides, wird das Feld „Themenbereich / Lektion“ oben (bzw. der Dateiname) genutzt.
                 </p>
               </div>
+
+              {/* Live Recognition Preview (Vokabeln, Wortarten & Unterkategorien) */}
+              {bulkPreviewItems.length > 0 && (
+                <div className="p-3 rounded-xl bg-celadon/10 border border-celadon/30 space-y-2 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-bold text-ink flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-celadon" />
+                      <span>
+                        {bulkPreviewItems.length}{' '}
+                        {isKr ? '개 단어 인식됨' : 'Vokabeln erkannt'}
+                      </span>
+                    </span>
+                    <span className="text-[11px] text-muted font-medium">
+                      명사 Nomen: <strong>{bulkPreviewCounts.noun}</strong> · 동사 Verben:{' '}
+                      <strong>{bulkPreviewCounts.verb}</strong> · 문법 Grammatik:{' '}
+                      <strong>{bulkPreviewCounts.grammar}</strong>
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-celadon/20">
+                    <span className="text-[11px] font-semibold text-muted mr-1">
+                      {isKr ? '인식된 세부 주제 (Unterkategorien):' : 'Erkannte Unterkategorien:'}
+                    </span>
+                    {bulkPreviewSubcategories.map(([subName, count]) => (
+                      <span
+                        key={subName}
+                        className="px-2 py-0.5 rounded-md bg-card border border-celadon/40 text-ink font-semibold text-[11px]"
+                      >
+                        {subName} <span className="text-celadon">({count})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Import Button */}
               <div className="pt-2 border-t border-border-card flex items-center justify-end gap-2">
@@ -1244,14 +1448,28 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                             {file.vocabCount} Vokabeln · {file.topikLevel} · {new Date(file.createdAt).toLocaleDateString()}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCloudFile(file.id, file.fileName)}
-                          className="p-1.5 rounded-lg text-muted hover:text-dancheong hover:bg-surface transition"
-                          title="Löschen"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleReparseCloudFile(file)}
+                            disabled={syncLoading}
+                            className="px-2 py-1 rounded-lg bg-celadon/15 text-celadon hover:bg-celadon/25 font-semibold text-[11px] transition"
+                            title="Unterkategorien & Wortarten aus dieser Datei neu einlesen"
+                          >
+                            {isKr ? '재분석' : 'Neu zuordnen'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFileToDelete(file);
+                              setDeleteAssociatedVocabs(true);
+                            }}
+                            className="p-1.5 rounded-lg text-muted hover:text-dancheong hover:bg-surface transition"
+                            title={isKr ? 'Firebase에서 삭제' : 'Aus Firebase löschen'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1314,6 +1532,140 @@ export const SyncModal: React.FC<SyncModalProps> = ({
               <AlertCircle className="w-4 h-4 shrink-0" />
             )}
             <span className="truncate">{feedback.message}</span>
+          </div>
+        )}
+
+        {/* FILE DELETION CONFIRMATION OVERLAY (In-app, iframe safe, no window.confirm) */}
+        {fileToDelete && (
+          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-hanji border border-border-card rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-dancheong/15 text-dancheong flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-ink">
+                    {isKr ? 'Firebase 파일 삭제' : 'Datei aus Firebase löschen'}
+                  </h4>
+                  <p className="text-xs text-muted truncate mt-0.5 font-medium">
+                    {fileToDelete.fileName}
+                  </p>
+                  <p className="text-[11px] text-muted opacity-80">
+                    {fileToDelete.vocabCount} Vokabeln · {fileToDelete.topikLevel}
+                  </p>
+                </div>
+              </div>
+
+              {/* Checkbox option to also delete associated vocabs from deck and sharedVocab */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-card border border-border-card cursor-pointer hover:bg-surface transition">
+                <input
+                  type="checkbox"
+                  checked={deleteAssociatedVocabs}
+                  onChange={(e) => setDeleteAssociatedVocabs(e.target.checked)}
+                  className="mt-0.5 rounded text-dancheong focus:ring-dancheong shrink-0"
+                />
+                <div className="text-xs space-y-0.5">
+                  <span className="font-semibold text-ink block">
+                    {isKr
+                      ? '단어장의 단어도 함께 삭제'
+                      : `Zugehörige Vokabeln (${fileToDelete.vocabCount}) entfernen`}
+                  </span>
+                  <span className="text-[11px] text-muted block leading-tight">
+                    {isKr
+                      ? 'Firebase 클라우드 및 현재 앱의 단어장에서 이 파일의 단어를 함께 삭제합니다.'
+                      : 'Löscht alle importierten Wörter dieser Datei aus Firebase und deiner aktuellen Lernkartei.'}
+                  </span>
+                </div>
+              </label>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setFileToDelete(null)}
+                  disabled={deletingFile}
+                  className="px-3.5 py-2 rounded-xl bg-card hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-muted hover:text-ink text-xs font-medium transition"
+                >
+                  {isKr ? '취소' : 'Abbrechen'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteFile}
+                  disabled={deletingFile}
+                  className="px-4 py-2 rounded-xl bg-dancheong hover:bg-dancheong/90 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {deletingFile ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {deletingFile
+                      ? isKr
+                        ? '삭제 중...'
+                        : 'Löschen...'
+                      : isKr
+                      ? '삭제하기'
+                      : 'Jetzt löschen'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CLEAR ALL VOCAB & CLOUD FILES CONFIRMATION OVERLAY */}
+        {showClearAllConfirm && (
+          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-hanji border border-border-card rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-dancheong/15 text-dancheong flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-ink">
+                    {isKr ? '모든 단어 및 파일 삭제' : 'Alle Vokabeln & Dateien löschen'}
+                  </h4>
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
+                    {isKr
+                      ? `모든 사용자 지정 단어(${customVocab.length}개)와 Firebase에 저장된 CSV 파일 목록을 완전히 삭제하시겠습니까?`
+                      : `Möchtest du wirklich alle ${customVocab.length} eigenen Vokabeln sowie alle in Firebase gespeicherten CSV-Dateien löschen?`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowClearAllConfirm(false)}
+                  disabled={clearingAll}
+                  className="px-3.5 py-2 rounded-xl bg-card hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-muted hover:text-ink text-xs font-medium transition"
+                >
+                  {isKr ? '취소' : 'Abbrechen'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmClearAll}
+                  disabled={clearingAll}
+                  className="px-4 py-2 rounded-xl bg-dancheong hover:bg-dancheong/90 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {clearingAll ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {clearingAll
+                      ? isKr
+                        ? '삭제 중...'
+                        : 'Lösche alles...'
+                      : isKr
+                      ? '전체 삭제'
+                      : 'Alles unwiderruflich löschen'}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
