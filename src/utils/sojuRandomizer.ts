@@ -20,22 +20,31 @@ export interface SojuSelection {
   itemCount: number;
 }
 
+export const SOJU_CORE_CATEGORIES: VocabCategory[] = [
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'phrase',
+  'grammar',
+];
+
 export const GAME_MODES: { id: GameMode; label: string; iconName: string; desc: string }[] = [
   {
     id: 'card',
-    label: 'Karten (플래시카드)',
+    label: 'Karten',
     iconName: 'Layers',
     desc: 'Klassisches Karteikarten-Training mit Spaced Repetition (SRS)',
   },
   {
     id: 'listening',
-    label: 'Hören (듣기)',
+    label: 'Hören',
     iconName: 'Headphones',
     desc: 'Erst koreanische Aussprache anhören, dann Bedeutung aufdecken',
   },
   {
     id: 'quiz',
-    label: 'Quiz (퀴즈)',
+    label: 'Quiz',
     iconName: 'Sparkles',
     desc: 'Multiple-Choice Fragen mit thematisch passenden Antwortoptionen',
   },
@@ -43,13 +52,13 @@ export const GAME_MODES: { id: GameMode; label: string; iconName: string; desc: 
 
 export const CATEGORY_LABELS: Record<SojuCategory, string> = {
   all: 'Alle Kategorien',
-  noun: 'Nomen (명사)',
-  verb: 'Verben (동사)',
-  adjective: 'Adjektive (형용사)',
-  adverb: 'Adverbien (부사)',
-  phrase: 'Ausdrücke (표현)',
-  grammar: 'Grammatik (문법)',
-  custom: 'Eigene / Markdown',
+  noun: 'Nomen',
+  verb: 'Verben',
+  adjective: 'Adjektive',
+  adverb: 'Adverbien',
+  phrase: 'Ausdrücke',
+  grammar: 'Grammatik',
+  custom: 'Eigene',
 };
 
 export const CATEGORY_LABELS_KR: Record<SojuCategory, string> = {
@@ -60,7 +69,7 @@ export const CATEGORY_LABELS_KR: Record<SojuCategory, string> = {
   adverb: '부사',
   phrase: '표현',
   grammar: '문법',
-  custom: '내 단어 / 마크다운',
+  custom: '내 단어',
 };
 
 export const GAME_MODES_KR: Record<GameMode, string> = {
@@ -72,6 +81,7 @@ export const GAME_MODES_KR: Record<GameMode, string> = {
 /**
  * Dynamically computes all valid (category, subcategory) combinations from the current deck.
  * Guaranteed to detect newly added subcategories from .md files or custom imports.
+ * Constrained strictly to the 6 grammatical categories: Nomen, Verben, Adjektive, Adverbien, Ausdrücke, Grammatik.
  */
 export function getAvailableSojuCombos(items: VocabItem[], lang: 'de' | 'kr' = 'de'): SojuCombo[] {
   if (!items || items.length === 0) return [];
@@ -81,7 +91,7 @@ export function getAvailableSojuCombos(items: VocabItem[], lang: 'de' | 'kr' = '
   // Group items by subcategory
   const subcategoryMap = new Map<string, VocabItem[]>();
   items.forEach((item) => {
-    const sub = item.sub || 'Allgemein';
+    const sub = item.sub?.trim() || 'Allgemein';
     const list = subcategoryMap.get(sub) || [];
     list.push(item);
     subcategoryMap.set(sub, list);
@@ -90,51 +100,33 @@ export function getAvailableSojuCombos(items: VocabItem[], lang: 'de' | 'kr' = '
   const combos: SojuCombo[] = [];
 
   for (const [sub, subItems] of subcategoryMap.entries()) {
-    // Determine categories present in this subcategory
-    const distinctCats = Array.from(new Set(subItems.map((i) => i.cat)));
-    const allCustom = subItems.every((i) => i.custom);
-
-    // If there is a single predominant category
-    if (distinctCats.length === 1) {
-      const cat = distinctCats[0];
-      combos.push({
-        category: cat,
-        categoryLabel: labels[cat] || cat,
-        subcategory: sub,
-        itemCount: subItems.length,
-      });
-
-      // If all items are custom, also make it available as custom category
-      if (allCustom) {
+    // Only search between the requested categories: Nomen, Verben, Adjektive, Adverbien, Ausdrücke, Grammatik
+    SOJU_CORE_CATEGORIES.forEach((cat) => {
+      const count = subItems.filter((i) => i.cat === cat).length;
+      if (count > 0) {
         combos.push({
-          category: 'custom',
-          categoryLabel: labels.custom,
+          category: cat,
+          categoryLabel: labels[cat] || cat,
           subcategory: sub,
-          itemCount: subItems.length,
+          itemCount: count,
         });
       }
-    } else {
-      // Mixed categories in this subcategory
-      combos.push({
-        category: 'all',
-        categoryLabel: `${labels.all} (${distinctCats.map(c => labels[c] || c).join(', ')})`,
-        subcategory: sub,
-        itemCount: subItems.length,
-      });
+    });
+  }
 
-      // Also allow selecting each specific category present in this subcategory
-      distinctCats.forEach((cat) => {
-        const count = subItems.filter((i) => i.cat === cat).length;
-        if (count > 0) {
-          combos.push({
-            category: cat,
-            categoryLabel: labels[cat] || cat,
-            subcategory: sub,
-            itemCount: count,
-          });
-        }
-      });
-    }
+  // Fallback: If no subcategory has these (e.g. general items), group globally by the 6 categories
+  if (combos.length === 0) {
+    SOJU_CORE_CATEGORIES.forEach((cat) => {
+      const count = items.filter((i) => i.cat === cat).length;
+      if (count > 0) {
+        combos.push({
+          category: cat,
+          categoryLabel: labels[cat] || cat,
+          subcategory: 'Allgemein',
+          itemCount: count,
+        });
+      }
+    });
   }
 
   return combos;
@@ -142,6 +134,7 @@ export function getAvailableSojuCombos(items: VocabItem[], lang: 'de' | 'kr' = '
 
 /**
  * Randomly picks a game mode (Karten, Hören, Quiz) and a matching category & subcategory combo.
+ * Category strictly picks between Nomen, Verben, Adjektive, Adverbien, Ausdrücke, Grammatik.
  */
 export function generateRandomSojuSelection(items: VocabItem[], lang: 'de' | 'kr' = 'de'): SojuSelection {
   const isKr = lang === 'kr';
@@ -149,13 +142,15 @@ export function generateRandomSojuSelection(items: VocabItem[], lang: 'de' | 'kr
 
   // Fallback if no items
   if (combos.length === 0) {
-    const randomMode = GAME_MODES[Math.floor(Math.random() * GAME_MODES.length)].id;
+    const randomModeObj = GAME_MODES[Math.floor(Math.random() * GAME_MODES.length)];
+    const randomCat = SOJU_CORE_CATEGORIES[Math.floor(Math.random() * SOJU_CORE_CATEGORIES.length)];
+    const labels = isKr ? CATEGORY_LABELS_KR : CATEGORY_LABELS;
     return {
-      mode: randomMode,
-      modeLabel: isKr ? GAME_MODES_KR[randomMode] : (GAME_MODES.find((m) => m.id === randomMode)?.label || 'Karten'),
-      category: 'all',
-      categoryLabel: isKr ? CATEGORY_LABELS_KR.all : CATEGORY_LABELS.all,
-      subcategory: 'all',
+      mode: randomModeObj.id,
+      modeLabel: isKr ? GAME_MODES_KR[randomModeObj.id] : randomModeObj.label,
+      category: randomCat,
+      categoryLabel: labels[randomCat],
+      subcategory: 'Allgemein',
       itemCount: 0,
     };
   }
@@ -163,7 +158,7 @@ export function generateRandomSojuSelection(items: VocabItem[], lang: 'de' | 'kr
   // 1. Pick random game mode: Karten, Hören, or Quiz
   const randomModeObj = GAME_MODES[Math.floor(Math.random() * GAME_MODES.length)];
 
-  // 2. Pick random (category, subcategory) combo
+  // 2. Pick random (category, subcategory) combo from the 6 core categories
   const randomCombo = combos[Math.floor(Math.random() * combos.length)];
 
   return {

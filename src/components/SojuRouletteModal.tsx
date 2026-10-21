@@ -100,10 +100,11 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
     }, 1300);
   }, [availableItems, isSpinning, rotationDegrees, soundEnabled, lang]);
 
-  // Initial spin when modal opens
+  // Reset and prepare on modal open (do NOT spin automatically)
   useEffect(() => {
     if (isOpen) {
-      performSpin();
+      setSelection(null);
+      setIsSpinning(false);
     } else {
       if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
       if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
@@ -152,22 +153,47 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-xl text-muted hover:text-ink hover:bg-surface transition"
-            aria-label="Schließen"
+            aria-label={lang === 'kr' ? '닫기' : 'Schließen'}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Center: Spinning Soju Bottle Stage */}
-        <div className="relative bg-surface/70 rounded-2xl p-4 sm:p-6 border border-border-card flex flex-col items-center justify-center overflow-hidden">
+        {/* Center: Spinning Soju Bottle Stage (Clickable to spin!) */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={!isSpinning ? performSpin : undefined}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !isSpinning) {
+              e.preventDefault();
+              performSpin();
+            }
+          }}
+          className={`relative bg-surface/70 rounded-2xl p-4 sm:p-6 border border-border-card flex flex-col items-center justify-center overflow-hidden transition select-none ${
+            isSpinning
+              ? 'cursor-wait'
+              : 'cursor-pointer hover:bg-surface/90 hover:border-emerald-500/40 active:scale-[0.99]'
+          }`}
+          title={
+            isSpinning
+              ? t.sojuModal.spinning
+              : selection
+              ? t.sojuModal.spinAgain
+              : t.sojuModal.tapToSpin
+          }
+        >
           {/* Subtle table circle guide */}
           <div className="absolute w-36 h-36 rounded-full border border-dashed border-emerald-500/25 pointer-events-none animate-spin-slow"></div>
 
           {/* The Spinning Bottle */}
           <div
-            className="w-20 h-20 flex items-center justify-center transition-transform"
+            className={`w-20 h-20 flex items-center justify-center transition-transform ${
+              !isSpinning ? 'hover:scale-110 active:scale-95' : ''
+            }`}
             style={{
               transform: `rotate(${rotationDegrees}deg)`,
               transitionDuration: isSpinning ? '1.3s' : '0.2s',
@@ -179,23 +205,32 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
 
           <div className="mt-2 text-center">
             <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${isSpinning ? 'bg-emerald-500 animate-ping' : 'bg-emerald-500'}`}></span>
-              {isSpinning ? t.sojuModal.spinning : t.sojuModal.chosen}
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isSpinning
+                    ? 'bg-emerald-500 animate-ping'
+                    : selection
+                    ? 'bg-emerald-500'
+                    : 'bg-emerald-500 animate-pulse'
+                }`}
+              ></span>
+              {isSpinning
+                ? t.sojuModal.spinning
+                : selection
+                ? t.sojuModal.chosen
+                : t.sojuModal.tapToSpin}
             </span>
           </div>
         </div>
 
-        {/* Three Slot Outcome Cards */}
-        {selection && (
+        {/* Three Slot Outcome Cards (Without 1/3, 2/3, 3/3 badges) */}
+        {selection ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* 1. Spielmodus */}
             <div className="bg-surface p-3 rounded-xl border border-border-card space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-muted">
+              <div className="flex items-center text-[11px] text-muted">
                 <span className="flex items-center gap-1 font-medium">
                   <Gamepad2 className="w-3.5 h-3.5 text-obangBlue" /> {t.sojuModal.modeLabel}
-                </span>
-                <span className="text-[10px] font-mono uppercase bg-card px-1.5 py-0.5 rounded border border-border-card">
-                  1/3
                 </span>
               </div>
               <div className="flex items-center gap-2 pt-0.5">
@@ -208,12 +243,9 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
 
             {/* 2. Kategorie */}
             <div className="bg-surface p-3 rounded-xl border border-border-card space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-muted">
+              <div className="flex items-center text-[11px] text-muted">
                 <span className="flex items-center gap-1 font-medium">
                   <Tag className="w-3.5 h-3.5 text-celadon" /> {t.sojuModal.categoryLabel}
-                </span>
-                <span className="text-[10px] font-mono uppercase bg-card px-1.5 py-0.5 rounded border border-border-card">
-                  2/3
                 </span>
               </div>
               <div className="flex items-center gap-1.5 pt-0.5">
@@ -225,12 +257,9 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
 
             {/* 3. Unterkategorie */}
             <div className="bg-surface p-3 rounded-xl border border-border-card space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-muted">
+              <div className="flex items-center text-[11px] text-muted">
                 <span className="flex items-center gap-1 font-medium truncate">
                   <FolderOpen className="w-3.5 h-3.5 text-amber-500" /> {t.sojuModal.subCategoryLabel}
-                </span>
-                <span className="text-[10px] font-mono uppercase bg-card px-1.5 py-0.5 rounded border border-border-card">
-                  3/3
                 </span>
               </div>
               <div className="flex items-center justify-between gap-1 pt-0.5">
@@ -240,11 +269,47 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
               </div>
             </div>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="bg-surface/50 p-3 rounded-xl border border-dashed border-border-card space-y-1">
+              <div className="flex items-center text-[11px] text-muted">
+                <span className="flex items-center gap-1 font-medium">
+                  <Gamepad2 className="w-3.5 h-3.5 text-obangBlue" /> {t.sojuModal.modeLabel}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="font-bold text-xs sm:text-sm text-muted">?</span>
+              </div>
+            </div>
+
+            <div className="bg-surface/50 p-3 rounded-xl border border-dashed border-border-card space-y-1">
+              <div className="flex items-center text-[11px] text-muted">
+                <span className="flex items-center gap-1 font-medium">
+                  <Tag className="w-3.5 h-3.5 text-celadon" /> {t.sojuModal.categoryLabel}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <span className="font-bold text-xs sm:text-sm text-muted">?</span>
+              </div>
+            </div>
+
+            <div className="bg-surface/50 p-3 rounded-xl border border-dashed border-border-card space-y-1">
+              <div className="flex items-center text-[11px] text-muted">
+                <span className="flex items-center gap-1 font-medium truncate">
+                  <FolderOpen className="w-3.5 h-3.5 text-amber-500" /> {t.sojuModal.subCategoryLabel}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-1 pt-0.5">
+                <span className="font-bold text-xs sm:text-sm text-muted">?</span>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Action Controls */}
         <div className="flex items-center justify-between gap-2.5 pt-1">
           <button
+            type="button"
             onClick={performSpin}
             disabled={isSpinning}
             className={`px-3.5 py-2.5 rounded-xl border border-border-card text-xs font-semibold flex items-center gap-1.5 transition ${
@@ -254,10 +319,11 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
             }`}
           >
             <RotateCw className={`w-3.5 h-3.5 ${isSpinning ? 'animate-spin' : ''}`} />
-            <span>{t.sojuModal.spinAgain}</span>
+            <span>{selection ? t.sojuModal.spinAgain : t.sojuModal.spinBottle}</span>
           </button>
 
           <button
+            type="button"
             onClick={handleApply}
             disabled={isSpinning || !selection}
             className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-1.5 disabled:opacity-50"

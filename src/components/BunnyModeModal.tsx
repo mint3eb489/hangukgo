@@ -7,7 +7,6 @@ import {
   Headphones,
   Sparkles,
   List,
-  FolderOpen,
 } from 'lucide-react';
 import { VocabItem } from '../data/vocabData';
 import { BunnyEarsIcon } from './BunnyEarsIcon';
@@ -65,9 +64,11 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
     [availableItems, targetSize]
   );
 
+  // Modal open: do NOT auto-hop. Reset so user clicks ears to activate.
   useEffect(() => {
     if (isOpen) {
-      performHop(targetSize);
+      setHopResult(null);
+      setIsHopping(false);
     } else {
       setIsHopping(false);
     }
@@ -78,7 +79,9 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
   const handleSizeChange = (newSize: number) => {
     hapticTap();
     setTargetSize(newSize);
-    performHop(newSize);
+    if (hopResult) {
+      performHop(newSize);
+    }
   };
 
   const handleStart = () => {
@@ -105,7 +108,7 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg text-ink">
-                {isKr ? '토끼 모드 (Bunny-Mix)' : 'Bunny-Modus · 토끼 모드'}
+                {isKr ? '토끼 모드 (Bunny-Mix)' : 'Bunny-Modus'}
               </h3>
             </div>
           </div>
@@ -119,11 +122,41 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
           </button>
         </div>
 
-        {/* Center Stage: Hopping Bunny Animation */}
-        <div className="relative bg-surface/70 rounded-2xl p-4 sm:p-5 border border-border-card flex flex-col items-center justify-center overflow-hidden">
+        {/* Center Stage: Hopping Bunny Animation (Clickable!) */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={!isHopping ? () => performHop(targetSize) : undefined}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !isHopping) {
+              e.preventDefault();
+              performHop(targetSize);
+            }
+          }}
+          className={`relative bg-surface/70 rounded-2xl p-4 sm:p-5 border border-border-card flex flex-col items-center justify-center overflow-hidden transition select-none ${
+            isHopping
+              ? 'cursor-wait'
+              : 'cursor-pointer hover:bg-surface/90 hover:border-ochre/40 active:scale-[0.99] group'
+          }`}
+          title={
+            isHopping
+              ? isKr
+                ? '토끼가 뛰는 중...'
+                : 'Bunny hüpft...'
+              : hopResult
+              ? isKr
+                ? '다시 귀를 눌러 점프'
+                : 'Auf die Ohren tippen zum erneuten Hüpfen'
+              : isKr
+              ? '토끼 귀를 눌러 시작'
+              : 'Auf die Ohren tippen zum Starten'
+          }
+        >
           <div
             className={`w-16 h-16 flex items-center justify-center transition-transform duration-300 ${
-              isHopping ? '-translate-y-3 rotate-6 scale-110' : 'translate-y-0 rotate-0 scale-100'
+              isHopping
+                ? '-translate-y-3 rotate-6 scale-110'
+                : 'translate-y-0 rotate-0 scale-100 group-hover:scale-110 group-active:scale-95'
             }`}
           >
             <BunnyEarsIcon className="w-14 h-14 drop-shadow-md" idPrefix="hopping-bunny" />
@@ -138,15 +171,22 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
                 : hopResult && hopResult.items.length > 0
                 ? isKr
                   ? `${hopResult.sourceSubcategories.length}개 리스트에서 ${hopResult.items.length}개 단어 랜덤 조합 완료!`
-                  : `${hopResult.items.length} Wörter aus ${hopResult.sourceSubcategories.length} Listen wild gemischt!`
+                  : `${hopResult.items.length} Wörter aus ${hopResult.sourceSubcategories.length} Listen gemischt!`
                 : isKr
-                ? '단어가 없습니다'
-                : 'Keine Vokabeln verfügbar'}
+                ? '토끼 귀를 눌러 단어를 무작위로 섞어보세요!'
+                : 'Tippe auf die Hasenohren, um den Bunny-Modus zu starten!'}
             </div>
+            {!isHopping && !hopResult && (
+              <div className="text-[11px] text-muted">
+                {isKr
+                  ? '귀를 누르면 다양한 리스트에서 단어를 모아옵니다'
+                  : 'Wählt per Zufall eine bunte Mischung aus all deinen Listen'}
+              </div>
+            )}
           </div>
 
           {/* List Size Selector Pills */}
-          <div className="flex items-center gap-1.5 mt-3">
+          <div className="flex items-center gap-1.5 mt-3" onClick={(e) => e.stopPropagation()}>
             {[15, 25, 40, 60].map((sz) => (
               <button
                 key={sz}
@@ -164,75 +204,57 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
           </div>
         </div>
 
-        {/* Breakdown of Categories & Hopped Lists */}
-        {hopResult && hopResult.items.length > 0 && (
-          <div className="space-y-3">
-            {/* Category Breakdown (Nomen / Verben / Adjektive / Grammatik) */}
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
-              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
-                  {isKr ? '명사' : 'Nomen'}
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
-                  {hopResult.categoryBreakdown.noun}
-                </div>
+        {/* Category Breakdown (Nomen / Verben / Adjektive / Grammatik) - "Durchhüpfte Listen & Vorschau" removed */}
+        {hopResult && hopResult.items.length > 0 ? (
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+              <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                {isKr ? '명사' : 'Nomen'}
               </div>
-              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
-                  {isKr ? '동사' : 'Verben'}
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
-                  {hopResult.categoryBreakdown.verb}
-                </div>
-              </div>
-              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
-                  {isKr ? '형용사' : 'Adjektive'}
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
-                  {hopResult.categoryBreakdown.adjective}
-                </div>
-              </div>
-              <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
-                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
-                  {isKr ? '문법' : 'Grammatik'}
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
-                  {hopResult.categoryBreakdown.grammar}
-                </div>
+              <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
+                {hopResult.categoryBreakdown.noun}
               </div>
             </div>
-
-            {/* Preview of Hopped Lists & Words */}
-            <div className="bg-surface p-3 rounded-2xl border border-border-card space-y-2">
-              <div className="flex items-center justify-between text-[11px] text-muted font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <FolderOpen className="w-3.5 h-3.5 text-ochre" />
-                  {isKr ? '포함된 리스트 & 단어 미리보기' : 'Durchhüpfte Listen & Vorschau'}
-                </span>
-                <span className="font-mono">
-                  {hopResult.sourceSubcategories.length}/{hopResult.totalAvailableLists}{' '}
-                  {isKr ? '주제' : 'Listen'}
-                </span>
+            <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+              <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                {isKr ? '동사' : 'Verben'}
               </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {hopResult.items.slice(0, 6).map((item) => (
-                  <span
-                    key={item.id}
-                    className="text-[11px] px-2 py-0.5 rounded-lg bg-card border border-border-card text-ink flex items-center gap-1"
-                  >
-                    <span className="font-bold">{item.kr}</span>
-                    <span className="text-[10px] text-muted">({item.sub || 'Allgemein'})</span>
-                  </span>
-                ))}
-                {hopResult.items.length > 6 && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-lg bg-card border border-border-card text-muted">
-                    +{hopResult.items.length - 6} {isKr ? '더보기' : 'weitere'}
-                  </span>
-                )}
+              <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
+                {hopResult.categoryBreakdown.verb}
               </div>
             </div>
+            <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+              <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                {isKr ? '형용사' : 'Adjektive'}
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
+                {hopResult.categoryBreakdown.adjective}
+              </div>
+            </div>
+            <div className="bg-surface p-2 sm:p-2.5 rounded-xl border border-border-card text-center">
+              <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                {isKr ? '문법' : 'Grammatik'}
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-ink mt-0.5">
+                {hopResult.categoryBreakdown.grammar}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            {['Nomen', 'Verben', 'Adjektive', 'Grammatik'].map((label, idx) => (
+              <div
+                key={label}
+                className="bg-surface/50 p-2 sm:p-2.5 rounded-xl border border-dashed border-border-card text-center"
+              >
+                <div className="text-[10px] sm:text-[11px] text-muted font-medium truncate">
+                  {isKr ? ['명사', '동사', '형용사', '문법'][idx] : label}
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-muted mt-0.5">
+                  -
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -281,7 +303,15 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
             className="px-3.5 py-2.5 rounded-xl border border-border-card bg-surface hover:bg-card text-xs font-semibold text-ink flex items-center gap-1.5 transition"
           >
             <RotateCw className={`w-3.5 h-3.5 ${isHopping ? 'animate-spin' : ''}`} />
-            <span>{isKr ? '다시 점프' : 'Neu hüpfen'}</span>
+            <span>
+              {isKr
+                ? hopResult
+                  ? '다시 점프'
+                  : '토끼 귀 점프'
+                : hopResult
+                ? 'Neu hüpfen'
+                : 'Ohren aktivieren'}
+            </span>
           </button>
 
           <button
@@ -294,7 +324,9 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
             <span>
               {isKr
                 ? `토끼 리스트 시작 (${hopResult?.items.length || 0}개)`
-                : `Bunny-Liste starten (${hopResult?.items.length || 0})`}
+                : hopResult
+                ? `Bunny-Liste starten (${hopResult.items.length})`
+                : 'Bunny-Liste starten'}
             </span>
           </button>
         </div>

@@ -147,12 +147,14 @@ export interface Translations {
   sojuModal: {
     title: string;
     subtitle: string;
+    tapToSpin: string;
     spinning: string;
     chosen: string;
     modeLabel: string;
     categoryLabel: string;
     subCategoryLabel: string;
     spinAgain: string;
+    spinBottle: string;
     startNow: string;
   };
   vocabModal: {
@@ -338,15 +340,17 @@ export const translations: Record<AppLanguage, Translations> = {
       widgetTooltip: (time) => `신라면 타이머: ${time} (Klicken für Steuerung)`,
     },
     sojuModal: {
-      title: '소주 룰렛',
+      title: 'Soju Roulette',
       subtitle: '(Zufallsauswahl)',
+      tapToSpin: 'Tippe auf die Flasche zum Drehen',
       spinning: 'Flasche dreht sich...',
-      chosen: '짠! Soju hat gewählt:',
+      chosen: 'Soju hat gewählt:',
       modeLabel: 'Modus',
       categoryLabel: 'Kategorie',
       subCategoryLabel: 'Unterkategorie',
       spinAgain: 'Nochmal drehen',
-      startNow: 'Jetzt starten (시작하기)',
+      spinBottle: 'Flasche drehen',
+      startNow: 'Jetzt starten',
     },
     vocabModal: {
       modalTitle: 'Vokabeln hinzufügen & importieren',
@@ -531,12 +535,14 @@ export const translations: Record<AppLanguage, Translations> = {
     sojuModal: {
       title: '소주 룰렛',
       subtitle: '(무작위 추천)',
+      tapToSpin: '소주병을 눌러 돌려보세요',
       spinning: '소주병이 돌아가는 중...',
-      chosen: '짠! 소주 룰렛 추천 결과:',
+      chosen: '소주 룰렛 추천 결과:',
       modeLabel: '학습 모드',
       categoryLabel: '카테고리',
       subCategoryLabel: '하위 카테고리',
       spinAgain: '다시 돌리기',
+      spinBottle: '소주병 돌리기',
       startNow: '지금 시작하기',
     },
     vocabModal: {

@@ -719,12 +719,6 @@ export default function App() {
 
   return (
     <div className="safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans">
-      {/* iOS Top Status Bar / Dynamic Island Safe-Area Backdrop */}
-      <div
-        className="md:hidden fixed top-0 left-0 right-0 h-[env(safe-area-inset-top,0px)] bg-hanji/95 backdrop-blur-md z-40 pointer-events-none"
-        aria-hidden="true"
-      />
-
       {/* STREAMLINED HEADER WITH PROGRESSIVE DISCLOSURE */}
       <header className="space-y-2">
         {/* TOP BAR: 3 Zones (Brand | Desktop Mode Nav | Primary Controls & Extras Drawer Trigger) */}
@@ -1016,8 +1010,8 @@ export default function App() {
               <span className="font-bold truncate">
                 {specialPlayMode === 'drama'
                   ? language === 'kr'
-                    ? `드라마 모드 · ${subcategory === 'all' ? '전체 K-드라마' : subcategory}`
-                    : `Drama-Modus · ${subcategory === 'all' ? 'Alle K-Dramas' : subcategory}`
+                    ? `드라마 모드 · ${subcategory}`
+                    : `Drama-Modus · ${subcategory}`
                   : language === 'kr'
                   ? `토끼 모드 · ${bunnyDeck.length}단어 (${bunnySourceSubs.length}개 리스트 믹스)`
                   : `Bunny-Modus · ${bunnyDeck.length} Wörter (${bunnySourceSubs.length} Listen gemischt)`}
@@ -1027,7 +1021,7 @@ export default function App() {
             <div className="flex items-center gap-1.5 shrink-0">
               {specialPlayMode === 'drama' ? (
                 <>
-                  {availableSubcategories.length > 0 && (
+                  {availableSubcategories.length > 1 && (
                     <select
                       value={subcategory}
                       onChange={(e) => {
@@ -1040,11 +1034,6 @@ export default function App() {
                       className="bg-card border border-border-card text-ink text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-obangBlue cursor-pointer max-w-[140px] sm:max-w-[190px] truncate"
                       aria-label={language === 'kr' ? 'K-드라마 시리즈 선택' : 'K-Drama Serie auswählen'}
                     >
-                      <option value="all">
-                        {language === 'kr'
-                          ? `전체 K-드라마 (${dramaAllItems.length})`
-                          : `Alle K-Dramas (${dramaAllItems.length})`}
-                      </option>
                       {availableSubcategories.map((sub) => {
                         const count = dramaAllItems.filter(
                           (i) => (i.sub?.trim() || 'Allgemein') === sub
@@ -1405,12 +1394,10 @@ export default function App() {
         isOpen={isDramaModalOpen}
         onClose={() => setIsDramaModalOpen(false)}
         lang={language}
-        currentShowSub={specialPlayMode === 'drama' ? subcategory : 'all'}
+        currentShowSub={specialPlayMode === 'drama' && subcategory !== 'all' ? subcategory : ''}
         currentMode={viewMode}
         dramaItems={dramaAllItems}
-        otherCustomItems={customVocab.filter((i) => !isDramaVocab(i))}
         onStartDramaMode={handleStartDramaMode}
-        onConvertSubcategoryToDrama={handleConvertSubcategoryToDrama}
       />
 
       {/* Bunny Mode / 토끼 모드 Modal */}
