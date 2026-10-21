@@ -780,7 +780,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50">
+    <div className="fixed inset-0 bg-ink/60 dark:bg-black/80 flex items-center justify-center safe-modal-overlay z-50">
       <div className="bg-hanji border border-border-card rounded-2xl max-w-xl w-full p-4 md:p-6 shadow-xl space-y-4 animate-pop safe-modal-panel overflow-y-auto overscroll-contain font-sans relative">
         {/* HEADER WITH UNIFIED TITLE & FIREBASE CLOUD BADGE */}
         <div className="flex items-center justify-between border-b border-border-card pb-3 shrink-0">
@@ -1676,7 +1676,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         {/* FILE DELETION CONFIRMATION OVERLAY (In-app, iframe safe, no window.confirm) */}
         {fileToDelete && (
-          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
             <div className="bg-hanji border border-border-card rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-dancheong/15 text-dancheong flex items-center justify-center shrink-0">
@@ -1755,7 +1755,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         {/* CLEAR ALL VOCAB & CLOUD FILES CONFIRMATION OVERLAY */}
         {showClearAllConfirm && (
-          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="absolute inset-0 bg-ink/75 dark:bg-black/85 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
             <div className="bg-hanji border border-border-card rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-dancheong/15 text-dancheong flex items-center justify-center shrink-0">

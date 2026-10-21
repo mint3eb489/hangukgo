@@ -93,7 +93,7 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-ink/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50"
+      className="fixed inset-0 bg-ink/60 dark:bg-black/75 flex items-center justify-center safe-modal-overlay z-50"
       onClick={onClose}
     >
       <div

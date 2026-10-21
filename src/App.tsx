@@ -111,10 +111,10 @@ export default function App() {
       } else {
         document.documentElement.classList.remove('dark');
       }
-      const metaTheme = document.getElementById('app-theme-color');
-      if (metaTheme) {
-        metaTheme.setAttribute('content', theme === 'dark' ? '#181716' : '#F7F4EF');
-      }
+      const themeColor = theme === 'dark' ? '#181716' : '#F7F4EF';
+      document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
+        el.setAttribute('content', themeColor);
+      });
     } catch (e) {
       console.warn('localStorage error', e);
     }
@@ -1216,7 +1216,7 @@ export default function App() {
 
       {/* MOBILE FIXED BOTTOM NAVIGATION BAR (Respects iPhone 17 Pro Max Home Swipe Bar) */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border-card grid grid-cols-4 items-center safe-bottom-nav"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border-card grid grid-cols-4 items-center safe-bottom-nav"
         aria-label={language === 'kr' ? '모바일 하단 내비게이션' : 'Mobile Modus-Auswahl'}
       >
         <button

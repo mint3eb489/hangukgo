@@ -50,7 +50,7 @@ export const RamyeonTimerModal: React.FC<RamyeonTimerModalProps> = ({
   // DONE MODAL SCREEN
   if (isDone) {
     return (
-      <div className="fixed inset-0 bg-ink/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-pop">
+      <div className="fixed inset-0 bg-ink/75 dark:bg-black/85 flex items-center justify-center p-4 z-50 animate-pop">
         <div className="bg-hanji border-2 border-dancheong rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 relative">
           <div className="w-16 h-16 rounded-2xl bg-surface border border-border-card flex items-center justify-center mx-auto shadow-md animate-bounce">
             <RamyeonPacketIcon className="w-12 h-12" idPrefix="done-modal" />
@@ -85,7 +85,7 @@ export const RamyeonTimerModal: React.FC<RamyeonTimerModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-ink/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50">
+    <div className="fixed inset-0 bg-ink/70 dark:bg-black/80 flex items-center justify-center safe-modal-overlay z-50">
       <div className="bg-hanji border border-border-card rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-5 animate-pop safe-modal-panel overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-card pb-3">

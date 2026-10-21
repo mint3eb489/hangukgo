@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 import { HangukGoWordmark } from './HangukGoWordmark';
 import { TaegeukThemeToggle } from './TaegeukThemeToggle';
+import { LanguageToggleButton } from './LanguageToggleButton';
 import { GatHatIcon } from './GatHatIcon';
 import { signInWithEmail } from '../services/firebase';
 import { AppLanguage } from '../utils/translations';
@@ -91,22 +92,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-hanji text-ink transition-colors duration-200 flex flex-col justify-between p-4 md:p-8 select-none relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-hanji text-ink transition-colors duration-200 flex flex-col justify-between px-4 md:px-8 select-none relative overflow-hidden font-sans pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+0.85rem))] pb-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+0.85rem))]">
       {/* Top Bar: Theme & Language Controls */}
       <header className="w-full max-w-5xl mx-auto flex items-center justify-end gap-2 z-10">
-        <button
-          type="button"
-          onClick={() => {
+        <LanguageToggleButton
+          language={language}
+          onToggle={() => {
             hapticTap();
             onToggleLanguage();
           }}
-          title={isKr ? '독일어로 전환 (Auf Deutsch wechseln)' : 'Auf Koreanisch wechseln (한국어로 전환)'}
-          className="h-9 px-3 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-xs font-bold text-ink transition flex items-center gap-1.5 shadow-2xs"
-        >
-          <span>{isKr ? '🇰🇷 한국어' : '🇩🇪 DE'}</span>
-          <span className="text-muted font-normal">⇄</span>
-          <span className="text-muted">{isKr ? 'DE' : 'KR'}</span>
-        </button>
+        />
 
         <TaegeukThemeToggle
           theme={theme}

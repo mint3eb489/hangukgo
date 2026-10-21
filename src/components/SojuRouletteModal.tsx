@@ -138,7 +138,7 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-ink/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center safe-modal-overlay z-50">
+    <div className="fixed inset-0 bg-ink/70 dark:bg-black/80 flex items-center justify-center safe-modal-overlay z-50">
       <div className="bg-hanji border border-border-card rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-5 animate-pop safe-modal-panel overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-card pb-3.5">

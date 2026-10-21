@@ -1,29 +1,26 @@
 import React, { useState } from 'react';
 import { VocabItem } from '../data/vocabData';
 import { speakKorean } from '../utils/speech';
-import { SrsMap, getSrsRecord, getSrsStageLabel, formatDueText } from '../utils/srs';
+import { SrsMap } from '../utils/srs';
 import { highlightKoreanVocab } from '../utils/highlightVocab';
 import { getHanjaInfo } from '../utils/hanjaLexicon';
 import { HanjaBreakdownBox } from './HanjaBreakdownBox';
-import { hapticRepeat, hapticSuccess, hapticTap } from '../utils/haptics';
+import { hapticTap } from '../utils/haptics';
 import { AppLanguage, translations } from '../utils/translations';
-import { Search, Volume2, RotateCcw, Check, Trash2, X } from 'lucide-react';
+import { Search, Volume2, X } from 'lucide-react';
 
 interface ListViewProps {
   items: VocabItem[];
-  srsMap: SrsMap;
+  srsMap?: SrsMap;
   lang?: AppLanguage;
-  onMarkSrs: (id: string, success: boolean) => void;
+  onMarkSrs?: (id: string, success: boolean) => void;
   onDeleteItem?: (id: string) => void;
   onOpenUpload?: () => void;
 }
 
 export const ListView: React.FC<ListViewProps> = ({
   items,
-  srsMap,
   lang = 'de',
-  onMarkSrs,
-  onDeleteItem,
   onOpenUpload,
 }) => {
   const t = translations[lang];
@@ -114,117 +111,63 @@ export const ListView: React.FC<ListViewProps> = ({
             )}
           </div>
         ) : (
-          filtered.map((item) => {
-            const srs = getSrsRecord(item.id, srsMap);
-            const badge = getSrsStageLabel(srs.level, lang);
-            const dueText = formatDueText(srs.nextReviewDate, srs.level, lang);
+          filtered.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 sm:p-5 hover:bg-surface/45 transition flex items-start justify-between gap-4"
+            >
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="hangul-display font-bold text-xl sm:text-2xl text-ink">
+                    {item.kr}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticTap();
+                      speakKorean(item.kr);
+                    }}
+                    className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface transition"
+                    title={t.list.listenTitle}
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
 
-            return (
-              <div
-                key={item.id}
-                className="p-4 sm:p-5 hover:bg-surface/45 transition flex items-start justify-between gap-4"
-              >
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="hangul-display font-bold text-xl sm:text-2xl text-ink">
-                      {item.kr}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hapticTap();
-                        speakKorean(item.kr);
-                      }}
-                      className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface transition"
-                      title={t.list.listenTitle}
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-
-                    {/* Clean unboxed metadata */}
-                    <div className="flex items-center gap-1.5 text-xs text-muted">
-                      <span>{item.sub}</span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-medium text-ink/80">{badge.name}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{dueText}</span>
-                      {item.custom && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="text-ochre font-semibold">{t.list.customBadge}</span>
-                        </>
-                      )}
-                    </div>
+                  {/* Clean unboxed metadata: only subcategory/topic */}
+                  <div className="flex items-center gap-1.5 text-xs text-muted">
+                    <span>{item.sub}</span>
                   </div>
+                </div>
 
-                  <p className="text-sm sm:text-base font-semibold text-ink leading-snug flex flex-wrap items-baseline gap-x-2">
-                    <span>{item.de}</span>
-                    {item.en && item.en !== item.de && (
-                      <span className="text-xs sm:text-sm font-medium text-muted font-sans">
-                        ({item.en})
-                      </span>
-                    )}
+                <p className="text-sm sm:text-base font-semibold text-ink leading-snug flex flex-wrap items-baseline gap-x-2">
+                  <span>{item.de}</span>
+                  {item.en && item.en !== item.de && (
+                    <span className="text-xs sm:text-sm font-medium text-muted font-sans">
+                      ({item.en})
+                    </span>
+                  )}
+                </p>
+
+                {/* Inline Hanja Root Breakdown */}
+                <HanjaBreakdownBox
+                  krWord={item.kr}
+                  cat={item.cat}
+                  lang={lang}
+                  variant="inline"
+                />
+
+                {item.exKr && (
+                  <p className="text-xs sm:text-sm font-kr text-ink/90 pt-1 leading-relaxed tracking-wide">
+                    <span className="text-celadon font-semibold">예: </span>
+                    {highlightKoreanVocab(item.exKr, item.kr, 'celadon')}{' '}
+                    <span className="font-sans text-xs text-muted">
+                      ({item.exDe || item.exEn}{item.exEn && item.exDe && item.exEn !== item.exDe ? ` · EN: ${item.exEn}` : ''})
+                    </span>
                   </p>
-
-                  {/* Inline Hanja Root Breakdown */}
-                  <HanjaBreakdownBox
-                    krWord={item.kr}
-                    cat={item.cat}
-                    lang={lang}
-                    variant="inline"
-                  />
-
-                  {item.exKr && (
-                    <p className="text-xs sm:text-sm font-kr text-ink/90 pt-1 leading-relaxed tracking-wide">
-                      <span className="text-celadon font-semibold">예: </span>
-                      {highlightKoreanVocab(item.exKr, item.kr, 'celadon')}{' '}
-                      <span className="font-sans text-xs text-muted">
-                        ({item.exDe || item.exEn}{item.exEn && item.exDe && item.exEn !== item.exDe ? ` · EN: ${item.exEn}` : ''})
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      hapticRepeat();
-                      onMarkSrs(item.id, false);
-                    }}
-                    title={t.list.markRepeatTitle}
-                    className="min-w-[40px] min-h-[40px] rounded-xl hover:bg-dancheong/12 text-muted hover:text-dancheong transition flex items-center justify-center"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      hapticSuccess();
-                      onMarkSrs(item.id, true);
-                    }}
-                    title={t.list.markLearnedTitle}
-                    className="min-w-[40px] min-h-[40px] rounded-xl hover:bg-celadon/12 text-muted hover:text-celadon transition flex items-center justify-center"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  {item.custom && onDeleteItem && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hapticTap();
-                        onDeleteItem(item.id);
-                      }}
-                      title={t.list.deleteCustomTitle}
-                      className="min-w-[40px] min-h-[40px] rounded-xl hover:bg-dancheong/12 text-stone-400 hover:text-dancheong transition flex items-center justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
     </section>

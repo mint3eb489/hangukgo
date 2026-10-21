@@ -1,10 +1,18 @@
-import React, { useEffect, useMemo } from 'react';
-import { X, RotateCcw, Award, BookOpen, Sparkles, CheckCircle2, Clock, Cloud, LogOut } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import {
+  X,
+  Award,
+  BookOpen,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Info,
+} from 'lucide-react';
 import { TopikLevel, VocabItem } from '../data/vocabData';
 import { SrsMap, getSrsRecord, isCardDue, getSrsStageLabel } from '../utils/srs';
 import { AppLanguage, translations } from '../utils/translations';
 import { GatHatIcon } from './GatHatIcon';
-import { auth, signOutUser } from '../services/firebase';
+import { auth } from '../services/firebase';
 import { hapticTap } from '../utils/haptics';
 
 interface UserProfileModalProps {
@@ -16,65 +24,83 @@ interface UserProfileModalProps {
   dramaItems?: VocabItem[];
   srsMap: SrsMap;
   lang: AppLanguage;
-  onOpenSync: () => void;
-  onOpenReset: () => void;
+  onOpenSync?: () => void;
+  onOpenReset?: () => void;
 }
 
-interface ScholarRank {
+export interface ScholarRank {
+  levelNumber: number;
   krTitle: string;
   hanja: string;
   deTitle: string;
   descDe: string;
   descKr: string;
   minPoints: number;
-  nextPoints: number | null;
+  maxPoints: number | null;
+  xpLabelDe: string;
+  xpLabelKr: string;
 }
 
-const SCHOLAR_RANKS: ScholarRank[] = [
+export const SCHOLAR_RANKS: ScholarRank[] = [
   {
+    levelNumber: 1,
     krTitle: '초학',
     hanja: '初學',
     deTitle: 'Novize der Akademie',
     descDe: 'Die Reise durch Hangul und Joseon-Weisheit beginnt.',
     descKr: '한글과 어휘의 길을 막 걷기 시작한 입문자입니다.',
     minPoints: 0,
-    nextPoints: 25,
+    maxPoints: 24,
+    xpLabelDe: '0 – 24 XP',
+    xpLabelKr: '0 ~ 24 XP',
   },
   {
+    levelNumber: 2,
     krTitle: '유생',
     hanja: '儒生',
     deTitle: 'Konfuzianischer Student',
     descDe: 'Fleißiges Studium in der Seonggyungwan-Gelehrtenschule.',
     descKr: '성균관에서 꾸준히 단어를 익히는 성실한 유생입니다.',
     minPoints: 25,
-    nextPoints: 80,
+    maxPoints: 79,
+    xpLabelDe: '25 – 79 XP',
+    xpLabelKr: '25 ~ 79 XP',
   },
   {
+    levelNumber: 3,
     krTitle: '생원',
     hanja: '生員',
     deTitle: 'Klassik-Gelehrter',
     descDe: 'Erste Staatsprüfung bestanden – solides Fundament im Wortschatz.',
     descKr: '소과에 합격하여 탄탄한 어휘 실력을 갖춘 선비입니다.',
     minPoints: 80,
-    nextPoints: 180,
+    maxPoints: 179,
+    xpLabelDe: '80 – 179 XP',
+    xpLabelKr: '80 ~ 179 XP',
   },
   {
+    levelNumber: 4,
     krTitle: '진사',
     hanja: '進士',
     deTitle: 'Literatur-Meister',
     descDe: 'Hohe Sprachgewandtheit in koreanischer Grammatik und Nuancen.',
     descKr: '문장과 어휘의 깊은 뜻을 통달한 뛰어난 인재입니다.',
     minPoints: 180,
-    nextPoints: 350,
+    maxPoints: 349,
+    xpLabelDe: '180 – 349 XP',
+    xpLabelKr: '180 ~ 349 XP',
   },
   {
+    levelNumber: 5,
     krTitle: '대제학',
     hanja: '大提學',
     deTitle: 'Großgelehrter von Joseon',
     descDe: 'Oberhaupt der Königlichen Akademie (Hongmungwan).',
     descKr: '홍문관의 최고 경지에 오른 한국어 마스터입니다.',
     minPoints: 350,
-    nextPoints: null,
+    maxPoints: null,
+    xpLabelDe: 'ab 350 XP',
+    xpLabelKr: '350 XP 이상',
   },
 ];
 
@@ -87,20 +113,38 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   dramaItems = [],
   srsMap,
   lang,
-  onOpenSync,
-  onOpenReset,
 }) => {
   const t = translations[lang];
   const isKr = lang === 'kr';
+  const [showRanksTooltip, setShowRanksTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (showRanksTooltip) {
+          setShowRanksTooltip(false);
+        } else {
+          onClose();
+        }
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, showRanksTooltip]);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!showRanksTooltip) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        setShowRanksTooltip(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showRanksTooltip]);
 
   const profileStats = useMemo(() => {
     const allItems = [...topik1Items, ...topik2Items, ...dramaItems];
@@ -174,17 +218,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       .filter((c) => c.total > 0);
 
     // Determine Scholar Rank
-    let rank = SCHOLAR_RANKS[0];
-    for (const r of SCHOLAR_RANKS) {
-      if (totalPoints >= r.minPoints) {
-        rank = r;
+    let rankIndex = 0;
+    for (let i = 0; i < SCHOLAR_RANKS.length; i++) {
+      if (totalPoints >= SCHOLAR_RANKS[i].minPoints) {
+        rankIndex = i;
       }
     }
 
-    const rankProgressPct = rank.nextPoints
+    const rank = SCHOLAR_RANKS[rankIndex];
+    const nextRank = SCHOLAR_RANKS[rankIndex + 1] || null;
+    const pointsNeededForNext = nextRank ? nextRank.minPoints - totalPoints : 0;
+
+    const rankProgressPct = nextRank
       ? Math.min(
           100,
-          Math.round(((totalPoints - rank.minPoints) / (rank.nextPoints - rank.minPoints)) * 100)
+          Math.max(
+            0,
+            Math.round(((totalPoints - rank.minPoints) / (nextRank.minPoints - rank.minPoints)) * 100)
+          )
         )
       : 100;
 
@@ -198,6 +249,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       activeStats,
       categories,
       rank,
+      rankIndex,
+      nextRank,
+      pointsNeededForNext,
       rankProgressPct,
     };
   }, [topik1Items, topik2Items, dramaItems, currentLevel, srsMap, t.categories]);
@@ -206,11 +260,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs safe-modal-overlay overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 safe-modal-overlay overflow-y-auto p-3 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg hanji-card-elevated rounded-3xl p-5 sm:p-7 space-y-5 safe-modal-panel overflow-y-auto overscroll-contain animate-pop"
+        className="w-full max-w-lg hanji-card-elevated rounded-3xl p-5 sm:p-7 space-y-5 safe-modal-panel overflow-y-auto overscroll-contain animate-pop my-auto relative"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -230,7 +284,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {auth.currentUser?.email ? (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-celadon inline-block" />
-                    <span className="font-medium text-ink">{auth.currentUser.email}</span>
+                    <span className="font-medium text-ink truncate max-w-[200px] sm:max-w-xs">
+                      {auth.currentUser.email}
+                    </span>
                   </>
                 ) : isKr ? (
                   '나의 한국어 수련 단계 및 SRS 통계'
@@ -246,68 +302,160 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               hapticTap();
               onClose();
             }}
-            className="min-w-[40px] min-h-[40px] rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card flex items-center justify-center text-ink transition"
+            className="w-9 h-9 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card flex items-center justify-center text-ink transition"
             aria-label={isKr ? '닫기' : 'Schließen'}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Joseon Scholar Rank Card (갓 / Gat Badge) */}
-        <div className="p-4 rounded-2xl bg-surface/80 border border-border-card space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="text-[11px] font-semibold text-celadon uppercase tracking-wider">
+        {/* Joseon Scholar Rank Card (Clearly structured & mobile optimized) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface/90 border border-border-card space-y-3.5">
+          {/* Header Row: Category Badge + Info Button */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-celadon tracking-wider uppercase">
                 {isKr ? '현재 선비 품계' : 'Aktueller Gelehrten-Rang'}
               </span>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="hangul-display text-2xl font-bold text-ink">
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-celadon/15 text-celadon font-bold tabular-nums">
+                {profileStats.rankIndex + 1} / 5
+              </span>
+            </div>
+
+            {/* Info Tooltip Anchor */}
+            <div className="relative" ref={tooltipRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  setShowRanksTooltip((prev) => !prev);
+                }}
+                title={isKr ? '모든 품계 및 필요 XP 확인' : 'Alle Gelehrten-Ränge und benötigte XP anzeigen'}
+                aria-expanded={showRanksTooltip}
+                className={`px-2.5 py-1 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs group active:scale-95 ${
+                  showRanksTooltip
+                    ? 'bg-obangBlue/15 border-obangBlue/40 text-obangBlue'
+                    : 'bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border-border-card text-ink'
+                }`}
+              >
+                <Info className="w-3.5 h-3.5 text-obangBlue group-hover:scale-110 transition-transform" />
+                <span>{isKr ? '품계 안내' : 'Alle Ränge'}</span>
+              </button>
+
+              {/* Compact Tooltip: Korean, Hanja, German & XP Range */}
+              {showRanksTooltip && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-72 sm:w-80 p-3 rounded-2xl bg-surface dark:bg-stone-900 border border-border-card shadow-2xl z-30 animate-fade-in text-left select-none space-y-1.5"
+                  role="tooltip"
+                >
+                  <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-border-card/60 text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <span>{isKr ? '선비 품계' : 'Gelehrten-Rang'}</span>
+                    <span>{isKr ? '필요 XP' : 'Benötigte XP'}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    {SCHOLAR_RANKS.map((r, idx) => {
+                      const isCurrent = idx === profileStats.rankIndex;
+                      return (
+                        <div
+                          key={r.levelNumber}
+                          className={`flex items-center justify-between text-xs py-1.5 px-2 rounded-lg transition ${
+                            isCurrent
+                              ? 'bg-celadon/15 font-bold text-ink ring-1 ring-celadon/40'
+                              : 'text-ink/90'
+                          }`}
+                        >
+                          <div className="flex items-baseline gap-1 truncate pr-2">
+                            <span className="font-bold">{r.krTitle}</span>
+                            <span className="text-[10px] font-serif text-muted">({r.hanja})</span>
+                            <span className="text-muted text-[11px] truncate">· {r.deTitle}</span>
+                          </div>
+                          <span className="font-mono tabular-nums font-bold text-ochre text-[11px] shrink-0">
+                            {isKr ? r.xpLabelKr : r.xpLabelDe}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Rank Details */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-0.5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="hangul-display text-2xl sm:text-3xl font-black text-ink tracking-tight">
                   {profileStats.rank.krTitle}
                 </span>
-                <span className="text-xs font-serif text-muted">
-                  ({profileStats.rank.hanja})
+                <span className="px-2 py-0.5 rounded-md bg-ink/10 text-xs font-serif font-bold text-ink/80 border border-border-card">
+                  {profileStats.rank.hanja}
                 </span>
-                <span className="text-sm font-bold text-ink">
+                <span className="text-sm sm:text-base font-bold text-ink">
                   · {profileStats.rank.deTitle}
                 </span>
               </div>
-              <p className="text-xs text-muted mt-1">
+              <p className="text-xs text-muted leading-relaxed">
                 {isKr ? profileStats.rank.descKr : profileStats.rank.descDe}
               </p>
             </div>
-            <div className="px-2.5 py-1 rounded-xl bg-card border border-border-card text-right shrink-0">
-              <span className="text-[10px] text-muted block">
-                {isKr ? '수련 점수' : 'SRS-Punkte'}
+
+            {/* XP Box */}
+            <div className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-card border border-border-card shrink-0 text-left sm:text-right shadow-2xs">
+              <span className="text-[10px] text-muted block font-medium">
+                {isKr ? '총 수련 점수' : 'Lern-Erfahrung'}
               </span>
-              <span className="font-mono tabular-nums text-sm font-bold text-ochre">
+              <span className="font-mono tabular-nums text-base sm:text-lg font-black text-ochre block">
                 {profileStats.totalPoints} XP
               </span>
             </div>
           </div>
 
-          {/* Progress to next Scholar Rank */}
-          {profileStats.rank.nextPoints && (
-            <div className="space-y-1 pt-1">
-              <div className="flex justify-between text-[11px] text-muted tabular-nums">
-                <span>
-                  {isKr ? '다음 품계까지 진행도' : 'Fortschritt zum nächsten Rang'}
+          {/* Progress Bar & Next Level Info */}
+          {profileStats.nextRank ? (
+            <div className="space-y-1.5 pt-1 border-t border-border-card/60">
+              <div className="flex items-center justify-between text-xs text-muted tabular-nums">
+                <span className="truncate pr-2">
+                  {isKr
+                    ? `다음: ${profileStats.nextRank.krTitle} (${profileStats.nextRank.hanja})`
+                    : `Nächster: ${profileStats.nextRank.deTitle}`}
                 </span>
-                <span className="font-semibold text-ink">
-                  {profileStats.totalPoints} / {profileStats.rank.nextPoints} XP
+                <span className="font-bold text-ink shrink-0">
+                  {profileStats.totalPoints} / {profileStats.nextRank.minPoints} XP
                 </span>
               </div>
               <div className="w-full bg-card h-2 rounded-full overflow-hidden border border-border-card">
                 <div
-                  className="bg-celadon h-full transition-all duration-500"
+                  className="bg-celadon h-full transition-all duration-500 rounded-full"
                   style={{ width: `${profileStats.rankProgressPct}%` }}
                 />
               </div>
+              <div className="flex items-center justify-between text-[11px] text-muted">
+                <span>
+                  {profileStats.rankProgressPct}% {isKr ? '달성' : 'erreicht'}
+                </span>
+                <span className="font-medium text-celadon">
+                  {isKr
+                    ? `승급까지 ${profileStats.pointsNeededForNext} XP 남음`
+                    : `Noch ${profileStats.pointsNeededForNext} XP bis zur Beförderung`}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-1 border-t border-border-card/60 text-xs text-celadon font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>
+                {isKr
+                  ? '최고 선비 품계(대제학)에 도달하셨습니다! 대단해요!'
+                  : 'Höchster Joseon-Rang erreicht: Großgelehrter! 대단해요!'}
+              </span>
             </div>
           )}
         </div>
 
         {/* 3 Key Metrics Grid */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           <div className="p-3 rounded-2xl hanji-card text-center space-y-0.5">
             <div className="flex items-center justify-center gap-1 text-celadon text-xs font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -463,49 +611,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Quick Actions (Cloud Sync / Reset / Logout) */}
-        <div className="pt-3 border-t border-border-card flex flex-wrap items-center justify-between gap-2">
+        {/* Clean Modal Footer (Removed Vokabel- & Cloud Zentrale, Zurücksetzen, Abmelden) */}
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => {
               hapticTap();
               onClose();
-              onOpenSync();
             }}
-            className="min-h-[40px] px-3.5 py-2 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-ink text-xs font-semibold transition flex items-center gap-1.5"
+            className="w-full py-3 rounded-2xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-xs font-bold text-ink transition"
           >
-            <Cloud className="w-3.5 h-3.5 text-celadon" />
-            <span>{t.actions.exportSync}</span>
+            {isKr ? '닫기' : 'Schließen'}
           </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                hapticTap();
-                onClose();
-                onOpenReset();
-              }}
-              className="min-h-[40px] px-3 py-2 rounded-xl bg-dancheong/10 hover:bg-dancheong/20 border border-dancheong/30 text-dancheong text-xs font-semibold transition flex items-center gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{t.actions.resetProgress}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={async () => {
-                hapticTap();
-                onClose();
-                await signOutUser();
-              }}
-              className="min-h-[40px] px-3 py-2 rounded-xl bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-muted hover:text-ink text-xs font-semibold transition flex items-center gap-1.5"
-              title={isKr ? '로그아웃' : 'Abmelden'}
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{isKr ? '로그아웃' : 'Abmelden'}</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
