@@ -243,7 +243,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
       {/* 3D Flip Card Container with Hanji Paper Stack Depth */}
       <div
         ref={touchAreaRef}
-        className="perspective-1000 hanji-paper-stack w-full h-84 sm:h-96 md:h-[410px] relative my-0.5"
+        className="perspective-1000 hanji-paper-stack w-full h-76 sm:h-92 md:h-[410px] relative my-0.5"
       >
         <div
           onClick={handleCardFlip}
@@ -403,8 +403,8 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
       </div>
 
       {/* Bottom Controls: Mobile 2 Rating Buttons | Desktop Zurück + 2 Rating Buttons + Weiter */}
-      <div className="mt-5 pt-1">
-        <div className="grid grid-cols-2 md:grid-cols-[auto_1fr_1fr_auto] items-center gap-3 max-w-2xl mx-auto">
+      <div className="mt-3.5 sm:mt-5 pt-0.5">
+        <div className="grid grid-cols-2 md:grid-cols-[auto_1fr_1fr_auto] items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto">
           {/* Desktop Only: Previous Card Button */}
           <button
             type="button"
@@ -422,7 +422,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
           <button
             type="button"
             onClick={() => handleRateCard(false)}
-            className="min-h-[52px] py-3.5 px-4 rounded-2xl bg-dancheong/12 hover:bg-dancheong/20 text-dancheong border border-dancheong/35 font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] whitespace-nowrap"
+            className="min-h-[48px] sm:min-h-[52px] py-3 sm:py-3.5 px-4 rounded-2xl bg-dancheong/12 hover:bg-dancheong/20 text-dancheong border border-dancheong/35 font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] whitespace-nowrap"
             title="Taste 1"
           >
             <RotateCcw className="w-4 h-4 shrink-0" />
@@ -432,7 +432,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
           <button
             type="button"
             onClick={() => handleRateCard(true)}
-            className="min-h-[52px] py-3.5 px-4 rounded-2xl bg-celadon hover:bg-celadon/90 text-white font-bold text-sm sm:text-base shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.98] whitespace-nowrap"
+            className="min-h-[48px] sm:min-h-[52px] py-3 sm:py-3.5 px-4 rounded-2xl bg-celadon hover:bg-celadon/90 text-white font-bold text-sm sm:text-base shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.98] whitespace-nowrap"
             title="Taste 2"
           >
             <Check className="w-4 h-4 shrink-0" />

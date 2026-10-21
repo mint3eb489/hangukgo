@@ -92,7 +92,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-hanji text-ink transition-colors duration-200 flex flex-col justify-between px-4 md:px-8 select-none relative overflow-hidden font-sans pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+0.85rem))] pb-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+0.85rem))]">
+    <div className="min-h-screen bg-hanji text-ink transition-colors duration-200 flex flex-col justify-between px-4 md:px-8 select-none relative overflow-hidden font-sans pt-[max(0.75rem,calc(env(safe-area-inset-top,0px)+0.5rem))] pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))]">
       {/* Top Bar: Theme & Language Controls */}
       <header className="w-full max-w-5xl mx-auto flex items-center justify-end gap-2 z-10">
         <LanguageToggleButton
