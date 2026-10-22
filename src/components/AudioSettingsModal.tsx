@@ -41,6 +41,7 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
     engine?: string;
   } | null>(null);
   const [diag, setDiag] = useState(() => getAudioDiagnostics());
+  const [isChimeTesting, setIsChimeTesting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,8 +59,6 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
     setAudioEnginePreference(newPref);
     setDiag(getAudioDiagnostics());
   };
-
-  const [isChimeTesting, setIsChimeTesting] = useState(false);
 
   const handleTestChime = async () => {
     hapticTap();

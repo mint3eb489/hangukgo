@@ -723,9 +723,9 @@ export default function App() {
       <div className="mobile-status-shield" aria-hidden="true" />
 
       {/* STREAMLINED HEADER WITH PROGRESSIVE DISCLOSURE */}
-      <header className="space-y-2">
+      <header className="space-y-1.5 sm:space-y-2">
         {/* TOP BAR: 3 Zones (Brand | Desktop Mode Nav | Primary Controls & Extras Drawer Trigger) */}
-        <div className="flex items-center justify-between gap-4 pb-3 border-b border-border-card">
+        <div className="flex items-center justify-between gap-4 pb-2 sm:pb-3 border-b border-border-card">
           {/* Zone 1: Brand Logo & Calligraphic „한국GO“ Wordmark (identical across DE & KR) */}
           <div className="flex items-center gap-2 shrink-0">
             <AppLogo className="w-8 h-8 md:w-9 md:h-9" />

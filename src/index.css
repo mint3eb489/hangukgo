@@ -69,8 +69,8 @@ html, body {
 
 .safe-app-shell {
   min-height: 100dvh;
-  padding-top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.45rem));
-  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  padding-top: max(2.35rem, calc(env(safe-area-inset-top, 0px) + 0.15rem));
+  padding-bottom: calc(4.1rem + env(safe-area-inset-bottom, 0px));
   padding-left: max(0.85rem, calc(env(safe-area-inset-left, 0px) + 0.5rem));
   padding-right: max(0.85rem, calc(env(safe-area-inset-right, 0px) + 0.5rem));
 }
@@ -90,7 +90,7 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  height: max(2.75rem, env(safe-area-inset-top, 0px));
+  height: max(2.35rem, env(safe-area-inset-top, 0px));
   background-color: var(--bg-hanji);
   z-index: 45;
   pointer-events: none;

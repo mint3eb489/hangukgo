@@ -197,7 +197,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
   const progressPercent = ((currentIndex + 1) / deck.length) * 100;
 
   return (
-    <div className="mt-1 flex flex-col">
+    <div className="mt-0.5 sm:mt-1 flex flex-col">
       {/* Top Meta Bar */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5 px-1 text-xs">
@@ -232,7 +232,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-surface h-1.5 rounded-full overflow-hidden mb-2.5 border border-border-card/80">
+        <div className="w-full bg-surface h-1.5 rounded-full overflow-hidden mb-2 sm:mb-2.5 border border-border-card/80">
           <div
             className="bg-obangBlue h-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
@@ -403,7 +403,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
       </div>
 
       {/* Bottom Controls: Mobile 2 Rating Buttons | Desktop Zurück + 2 Rating Buttons + Weiter */}
-      <div className="mt-3.5 sm:mt-5 pt-0.5">
+      <div className="mt-2.5 sm:mt-4 pt-0.5">
         <div className="grid grid-cols-2 md:grid-cols-[auto_1fr_1fr_auto] items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto">
           {/* Desktop Only: Previous Card Button */}
           <button
