@@ -235,7 +235,7 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
       {/* 3D Flip Card Container with Hanji Paper Stack Depth */}
       <div
         ref={touchAreaRef}
-        className="perspective-1000 hanji-paper-stack w-full h-76 sm:h-92 md:h-[410px] relative my-0.5"
+        className="perspective-1000 hanji-paper-stack w-full h-72 sm:h-84 md:h-[400px] relative my-0.5"
       >
         <div
           onClick={handleCardFlip}

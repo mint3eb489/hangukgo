@@ -1,10 +1,11 @@
 /**
  * Korean Speech Audio System
  * Resilient multi-engine TTS architecture:
- * 1. Native Web Speech API (offline, zero-latency, works on GitHub Pages & mobile)
- * 2. High-fidelity Online Neural TTS stream (via dev server /api/tts or direct online fallback)
- * 3. iOS audio context unlocker & silent switch detection advice
+ * 1. Native Web Speech API (offline, zero-latency, natively supported on iOS, macOS, Android, Windows)
+ * 2. High-fidelity Online Neural TTS stream (via /api/tts or online fallback)
+ * 3. iOS audio context unlocker & silent switch detection
  * 4. Diagnostics & engine preference switching ('auto' | 'online' | 'device')
+ * 5. Hardware audio chime tester
  */
 
 export type AudioEnginePreference = 'auto' | 'online' | 'device';
@@ -13,13 +14,28 @@ const PREF_STORAGE_KEY = 'hanguk_audio_engine_pref';
 
 // Cached state
 let cachedVoices: SpeechSynthesisVoice[] = [];
-let voicesLoaded = false;
 let isAudioUnlocked = false;
 let currentAudio: HTMLAudioElement | null = null;
 let proxyAvailable: boolean | null = null;
+let activeUtterance: SpeechSynthesisUtterance | null = null;
 
 // Reusable unlocked audio element for iOS Safari
 let primedAudio: HTMLAudioElement | null = null;
+
+// Check backend proxy once in background at boot without blocking user gesture
+if (typeof window !== 'undefined') {
+  try {
+    fetch('/api/tts?text=%ED%95%9C', { method: 'HEAD' })
+      .then((res) => {
+        proxyAvailable = res.ok;
+      })
+      .catch(() => {
+        proxyAvailable = false;
+      });
+  } catch {
+    proxyAvailable = false;
+  }
+}
 
 /**
  * Check if the current client is iOS / iPadOS
@@ -71,7 +87,6 @@ function refreshVoices(): SpeechSynthesisVoice[] {
     const voices = window.speechSynthesis.getVoices();
     if (voices && voices.length > 0) {
       cachedVoices = voices;
-      voicesLoaded = true;
     }
     return cachedVoices;
   } catch {
@@ -121,6 +136,63 @@ export function findKoreanVoice(): SpeechSynthesisVoice | null {
 }
 
 /**
+ * Play a short melodic Web Audio chime (to test hardware speaker & silent switch)
+ */
+export function playKoreanChime(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve(false);
+      return;
+    }
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        resolve(false);
+        return;
+      }
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+
+      const now = ctx.currentTime;
+      // Traditional pentatonic notes (E5 659Hz -> G#5 830Hz)
+      const notes = [
+        { freq: 659.25, time: now, dur: 0.12 },
+        { freq: 830.61, time: now + 0.12, dur: 0.28 },
+      ];
+
+      notes.forEach((n) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.freq, n.time);
+
+        gain.gain.setValueAtTime(0.2, n.time);
+        gain.gain.exponentialRampToValueAtTime(0.001, n.time + n.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(n.time);
+        osc.stop(n.time + n.dur);
+      });
+
+      setTimeout(() => {
+        try {
+          ctx.close();
+        } catch {}
+        resolve(true);
+      }, 500);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/**
  * Get diagnostic info about the speech environment
  */
 export function getAudioDiagnostics(): {
@@ -134,26 +206,26 @@ export function getAudioDiagnostics(): {
 } {
   const hasWebSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const koVoice = findKoreanVoice();
-  const allKo = cachedVoices
+  const allKo = (cachedVoices.length > 0 ? cachedVoices : refreshVoices())
     .filter((v) => v.lang.toLowerCase().startsWith('ko') || /korean|한국/i.test(v.name))
     .map((v) => `${v.name} (${v.lang})`);
 
   const pref = getAudioEnginePreference();
-  let effectiveEngine: 'webspeech' | 'online' = 'online';
+  let effectiveEngine: 'webspeech' | 'online' = 'webspeech';
 
-  if (pref === 'device') {
-    effectiveEngine = 'webspeech';
-  } else if (pref === 'online') {
+  if (pref === 'online') {
     effectiveEngine = 'online';
+  } else if (pref === 'device') {
+    effectiveEngine = 'webspeech';
   } else {
-    // 'auto': use webspeech if a real Korean voice is found, else fallback to online audio
-    effectiveEngine = koVoice ? 'webspeech' : 'online';
+    // 'auto': default to webspeech because iOS Safari and Android natively speak ko-KR
+    effectiveEngine = hasWebSpeech ? 'webspeech' : 'online';
   }
 
   return {
     hasWebSpeech,
     hasNativeVoice: !!koVoice,
-    voiceName: koVoice ? `${koVoice.name} (${koVoice.lang})` : null,
+    voiceName: koVoice ? `${koVoice.name} (${koVoice.lang})` : (hasWebSpeech ? 'System-Koreanisch (ko-KR)' : null),
     allKoreanVoices: allKo,
     isIosDevice: isIOS(),
     activePreference: pref,
@@ -177,7 +249,6 @@ export function unlockAudio(): void {
       if (ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
       }
-      // Play a short silent buffer
       const buffer = ctx.createBuffer(1, 1, 22050);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
@@ -188,7 +259,6 @@ export function unlockAudio(): void {
     // 2. Prime a silent HTML5 Audio element for iOS Safari
     if (!primedAudio) {
       primedAudio = new Audio();
-      // 0.05s silent WAV base64
       primedAudio.src =
         'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
       primedAudio.volume = 0.01;
@@ -253,7 +323,10 @@ export function stopSpeech(): void {
 
   if ('speechSynthesis' in window) {
     try {
-      window.speechSynthesis.cancel();
+      // Only cancel if actually speaking to prevent WebKit silent-suppression bug
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
     } catch {
       // ignore
     }
@@ -261,7 +334,8 @@ export function stopSpeech(): void {
 }
 
 /**
- * Speak Korean using the device's native Web Speech API
+ * Speak Korean using the device's native Web Speech API.
+ * Synchronous start, retaining utterance reference to prevent WebKit GC.
  */
 function speakViaWebSpeech(cleaned: string, rate: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -271,16 +345,13 @@ function speakViaWebSpeech(cleaned: string, rate: number): Promise<boolean> {
     }
 
     try {
-      // Clear any stuck queue (crucial for Chrome and Safari!)
-      window.speechSynthesis.cancel();
-
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
 
       const utterance = new SpeechSynthesisUtterance(cleaned);
       utterance.lang = 'ko-KR';
-      utterance.rate = Math.max(0.6, Math.min(1.4, rate));
+      utterance.rate = Math.max(0.65, Math.min(1.3, rate));
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
@@ -290,34 +361,29 @@ function speakViaWebSpeech(cleaned: string, rate: number): Promise<boolean> {
       }
 
       let hasFinished = false;
+      const finish = (ok: boolean) => {
+        if (!hasFinished) {
+          hasFinished = true;
+          activeUtterance = null;
+          resolve(ok);
+        }
+      };
 
       utterance.onstart = () => {
         // Speech started successfully
       };
 
-      utterance.onend = () => {
-        if (!hasFinished) {
-          hasFinished = true;
-          resolve(true);
-        }
-      };
-
+      utterance.onend = () => finish(true);
       utterance.onerror = (e) => {
         console.warn('Web Speech API error:', e.error);
-        if (!hasFinished) {
-          hasFinished = true;
-          // If language was unavailable or not-allowed, signal failure so fallback can run
-          resolve(false);
-        }
+        finish(false);
       };
 
-      // Safety timeout in case onend never fires (rare browser bug)
-      setTimeout(() => {
-        if (!hasFinished) {
-          hasFinished = true;
-          resolve(true);
-        }
-      }, 7000);
+      // Keep active reference to prevent WebKit garbage collection
+      activeUtterance = utterance;
+
+      // Safety timeout in case onend never fires
+      setTimeout(() => finish(true), 6000);
 
       window.speechSynthesis.speak(utterance);
     } catch (err) {
@@ -328,32 +394,10 @@ function speakViaWebSpeech(cleaned: string, rate: number): Promise<boolean> {
 }
 
 /**
- * Check if the backend /api/tts proxy is accessible
- */
-async function checkProxy(): Promise<boolean> {
-  if (proxyAvailable !== null) return proxyAvailable;
-  if (typeof window === 'undefined') return false;
-
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1200);
-    const res = await fetch('/api/tts?text=%ED%95%9C', {
-      method: 'HEAD',
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    proxyAvailable = res.ok;
-  } catch {
-    proxyAvailable = false;
-  }
-  return proxyAvailable;
-}
-
-/**
  * Speak Korean using HTML5 Audio streaming
  */
-async function speakViaAudioStream(cleaned: string, rate: number): Promise<boolean> {
-  return new Promise(async (resolve) => {
+function speakViaAudioStream(cleaned: string, rate: number): Promise<boolean> {
+  return new Promise((resolve) => {
     if (typeof window === 'undefined') {
       resolve(false);
       return;
@@ -362,18 +406,16 @@ async function speakViaAudioStream(cleaned: string, rate: number): Promise<boole
     const isSlow = rate <= 0.8;
     const targetPlaybackRate = isSlow ? 0.75 : 1.0;
 
-    // Check if proxy works (Vite dev server)
-    const hasProxy = await checkProxy();
-
     const proxyUrl = `/api/tts?text=${encodeURIComponent(cleaned)}${isSlow ? '&slow=true' : ''}`;
     const directFallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&ttsspeed=${
       isSlow ? '0.24' : '1'
     }&q=${encodeURIComponent(cleaned)}`;
 
-    const chosenUrl = hasProxy ? proxyUrl : directFallbackUrl;
+    // If proxy check failed earlier, use fallback directly
+    const chosenUrl = proxyAvailable === false ? directFallbackUrl : proxyUrl;
 
     const audio = primedAudio || new Audio();
-    primedAudio = null; // consume primed instance
+    primedAudio = null;
     currentAudio = audio;
     audio.defaultPlaybackRate = targetPlaybackRate;
 
@@ -392,9 +434,7 @@ async function speakViaAudioStream(cleaned: string, rate: number): Promise<boole
     };
 
     audio.onended = () => finish(true);
-
     audio.onerror = () => {
-      // If proxy failed, try direct URL once
       if (audio.src.includes('/api/tts')) {
         proxyAvailable = false;
         audio.src = directFallbackUrl;
@@ -405,7 +445,6 @@ async function speakViaAudioStream(cleaned: string, rate: number): Promise<boole
       }
     };
 
-    // Load and play
     try {
       audio.src = chosenUrl;
       audio.playbackRate = targetPlaybackRate;
@@ -417,7 +456,6 @@ async function speakViaAudioStream(cleaned: string, rate: number): Promise<boole
           })
           .catch((err) => {
             console.warn('Audio play rejection:', err);
-            // If proxy failed, try direct URL
             if (chosenUrl === proxyUrl) {
               proxyAvailable = false;
               audio.src = directFallbackUrl;
@@ -432,36 +470,26 @@ async function speakViaAudioStream(cleaned: string, rate: number): Promise<boole
       finish(false);
     }
 
-    // Safety timeout
     setTimeout(() => {
       finish(true);
-    }, 8000);
+    }, 6000);
   });
 }
 
 /**
  * Main public speak function.
- * Intelligently coordinates Web Speech API and Audio Streaming based on device capabilities.
+ * Prioritizes native Web Speech API for immediate, synchronous, offline Korean voice playback on iPhone & Android.
  */
 export async function speakKorean(text: string, rate: number = 0.9): Promise<void> {
   const cleaned = sanitizeKoreanText(text);
   if (!cleaned) return;
 
-  // Make sure previous speech is stopped cleanly
+  unlockAudio();
   stopSpeech();
 
   const pref = getAudioEnginePreference();
-  const koVoice = findKoreanVoice();
 
-  // Route based on preference & device capability:
-  if (pref === 'device') {
-    const success = await speakViaWebSpeech(cleaned, rate);
-    if (!success) {
-      await speakViaAudioStream(cleaned, rate);
-    }
-    return;
-  }
-
+  // 1. Explicit online preference
   if (pref === 'online') {
     const success = await speakViaAudioStream(cleaned, rate);
     if (!success) {
@@ -470,21 +498,12 @@ export async function speakKorean(text: string, rate: number = 0.9): Promise<voi
     return;
   }
 
-  // 'auto' mode:
-  // If device has a high-quality native Korean voice (like Apple iOS/macOS Yuna or Android Google TTS),
-  // use Web Speech first for instant, offline, zero-latency playback.
-  if (koVoice) {
-    const ok = await speakViaWebSpeech(cleaned, rate);
-    if (!ok) {
-      await speakViaAudioStream(cleaned, rate);
-    }
-  } else {
-    // If no native voice installed on device (e.g. Windows without Korean speech pack),
-    // use high-fidelity neural audio stream first.
-    const ok = await speakViaAudioStream(cleaned, rate);
-    if (!ok) {
-      await speakViaWebSpeech(cleaned, rate);
-    }
+  // 2. Default ('auto') or 'device':
+  // Always use Web Speech API directly first: it is synchronous, offline, has zero network latency,
+  // and is built directly into iOS Safari (Sora / Yuna voice).
+  const ok = await speakViaWebSpeech(cleaned, rate);
+  if (!ok && pref !== 'device') {
+    await speakViaAudioStream(cleaned, rate);
   }
 }
 
@@ -500,20 +519,22 @@ export async function testKoreanSpeech(): Promise<{
   const diag = getAudioDiagnostics();
   unlockAudio();
 
-  let engineUsed: 'webspeech' | 'online' = diag.effectiveEngine;
+  let engineUsed: 'webspeech' | 'online' = 'webspeech';
   let success = false;
 
-  if (diag.effectiveEngine === 'webspeech') {
-    success = await speakViaWebSpeech('안녕하세요! 한국어 공부 화이팅!', 0.95);
-    if (!success) {
-      success = await speakViaAudioStream('안녕하세요! 한국어 공부 화이팅!', 0.95);
-      if (success) engineUsed = 'online';
-    }
-  } else {
+  if (diag.activePreference === 'online') {
     success = await speakViaAudioStream('안녕하세요! 한국어 공부 화이팅!', 0.95);
-    if (!success && diag.hasWebSpeech) {
+    if (success) {
+      engineUsed = 'online';
+    } else {
       success = await speakViaWebSpeech('안녕하세요! 한국어 공부 화이팅!', 0.95);
       if (success) engineUsed = 'webspeech';
+    }
+  } else {
+    success = await speakViaWebSpeech('안녕하세요! 한국어 공부 화이팅!', 0.95);
+    if (!success && diag.activePreference !== 'device') {
+      success = await speakViaAudioStream('안녕하세요! 한국어 공부 화이팅!', 0.95);
+      if (success) engineUsed = 'online';
     }
   }
 

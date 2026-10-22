@@ -719,6 +719,9 @@ export default function App() {
 
   return (
     <div className="safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans">
+      {/* iPhone Status Bar Shield: prevents native iOS status bar blur from cutting off top header */}
+      <div className="mobile-status-shield" aria-hidden="true" />
+
       {/* STREAMLINED HEADER WITH PROGRESSIVE DISCLOSURE */}
       <header className="space-y-2">
         {/* TOP BAR: 3 Zones (Brand | Desktop Mode Nav | Primary Controls & Extras Drawer Trigger) */}

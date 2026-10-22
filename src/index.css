@@ -69,10 +69,10 @@ html, body {
 
 .safe-app-shell {
   min-height: 100dvh;
-  padding-top: max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem));
+  padding-top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.45rem));
   padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-  padding-left: max(0.75rem, calc(env(safe-area-inset-left, 0px) + 0.75rem));
-  padding-right: max(0.75rem, calc(env(safe-area-inset-right, 0px) + 0.75rem));
+  padding-left: max(0.85rem, calc(env(safe-area-inset-left, 0px) + 0.5rem));
+  padding-right: max(0.85rem, calc(env(safe-area-inset-right, 0px) + 0.5rem));
 }
 
 @media screen and (min-width: 768px) {
@@ -81,6 +81,25 @@ html, body {
     padding-bottom: 2rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+  }
+}
+
+/* Solid status bar shield for iPhone Safari: prevents native status bar blur over icons and scrolling content */
+.mobile-status-shield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(2.75rem, env(safe-area-inset-top, 0px));
+  background-color: var(--bg-hanji);
+  z-index: 45;
+  pointer-events: none;
+  transition: background-color 0.2s ease;
+}
+
+@media screen and (min-width: 768px) {
+  .mobile-status-shield {
+    display: none;
   }
 }
 

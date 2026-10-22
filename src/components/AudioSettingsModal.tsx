@@ -16,6 +16,7 @@ import {
   getAudioEnginePreference,
   AudioEnginePreference,
   stopSpeech,
+  playKoreanChime,
 } from '../utils/speech';
 import { AppLanguage } from '../utils/translations';
 import { hapticTap } from '../utils/haptics';
@@ -56,6 +57,18 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
     setPref(newPref);
     setAudioEnginePreference(newPref);
     setDiag(getAudioDiagnostics());
+  };
+
+  const [isChimeTesting, setIsChimeTesting] = useState(false);
+
+  const handleTestChime = async () => {
+    hapticTap();
+    setIsChimeTesting(true);
+    try {
+      await playKoreanChime();
+    } finally {
+      setTimeout(() => setIsChimeTesting(false), 350);
+    }
   };
 
   const handleRunTest = async () => {
@@ -142,19 +155,32 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              disabled={isTesting}
-              onClick={handleRunTest}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-2 active:scale-95 whitespace-nowrap ${
-                isTesting
-                  ? 'bg-obangBlue/70 text-white cursor-wait'
-                  : 'bg-obangBlue hover:bg-obangBlue/90 text-white'
-              }`}
-            >
-              <Play className="w-3.5 h-3.5 fill-white" />
-              <span>{isTesting ? (isKr ? '재생 중...' : 'Wird abgespielt...') : isKr ? '소리 테스트' : 'Ton testen'}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={isChimeTesting}
+                onClick={handleTestChime}
+                title={isKr ? '하드웨어 스피커 작동 확인' : 'Prüft, ob der Lautsprecher an ist und Töne ausgeben kann'}
+                className="px-3 py-2 rounded-xl bg-card hover:bg-stone-200 dark:hover:bg-stone-700/60 border border-border-card text-ink font-semibold text-xs shadow-2xs transition flex items-center gap-1.5 active:scale-95"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-celadon" />
+                <span>{isChimeTesting ? (isKr ? '신호음...' : 'Signal...') : isKr ? '스피커 확인' : 'Gong-Check'}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isTesting}
+                onClick={handleRunTest}
+                className={`px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 active:scale-95 whitespace-nowrap ${
+                  isTesting
+                    ? 'bg-obangBlue/70 text-white cursor-wait'
+                    : 'bg-obangBlue hover:bg-obangBlue/90 text-white'
+                }`}
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>{isTesting ? (isKr ? '재생 중...' : 'Wird abgespielt...') : isKr ? '한국어 음성 듣기' : 'Stimme testen'}</span>
+              </button>
+            </div>
           </div>
 
           {testResult && (
