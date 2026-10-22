@@ -212,12 +212,14 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
             >
               <div className="flex items-center justify-between w-full">
                 <span className="font-bold text-xs text-ink">
-                  {isKr ? '자동 (권장)' : 'Automatisch'}
+                  {isKr ? '자동 (권장)' : 'Automatisch (Empfohlen)'}
                 </span>
                 {pref === 'auto' && <Check className="w-3.5 h-3.5 text-obangBlue" />}
               </div>
               <span className="text-[11px] text-muted mt-1 leading-tight">
-                {isKr ? '기기 음성 우선, 없을 시 온라인' : 'Beste Kombination aus Offline- & Online-Stimme'}
+                {isKr
+                  ? '무음 모드 우회 스트림 + 오프라인 백업'
+                  : 'Umgeht iPhone-Stummmodus + Offline-Fallback'}
               </span>
             </button>
 
@@ -233,12 +235,14 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
             >
               <div className="flex items-center justify-between w-full">
                 <span className="font-bold text-xs text-ink">
-                  {isKr ? '온라인 전용' : 'Online-Audio'}
+                  {isKr ? '미디어 오디오 스트림' : 'Audio-Stream'}
                 </span>
                 {pref === 'online' && <Check className="w-3.5 h-3.5 text-obangBlue" />}
               </div>
               <span className="text-[11px] text-muted mt-1 leading-tight">
-                {isKr ? '항상 고음질 온라인 스트림' : 'Immer natürlicher Online-Audio-Stream'}
+                {isKr
+                  ? 'YouTube처럼 무음 모드에서도 재생'
+                  : 'Wie YouTube: Spielt auch im Stummmodus'}
               </span>
             </button>
 
@@ -259,27 +263,32 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({
                 {pref === 'device' && <Check className="w-3.5 h-3.5 text-obangBlue" />}
               </div>
               <span className="text-[11px] text-muted mt-1 leading-tight">
-                {isKr ? '오프라인 Web Speech API' : 'Web Speech API (ohne Internet)'}
+                {isKr
+                  ? '오프라인 Web Speech (무음 모드시 음소거)'
+                  : 'Web Speech (wird im Stummmodus stumm)'}
               </span>
             </button>
           </div>
         </div>
 
         {/* iPhone & iPad Troubleshooting Box (Crucial for iOS silent switch!) */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-ink space-y-2">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs sm:text-sm">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-celadon/10 border border-celadon/30 text-ink space-y-2">
+          <div className="flex items-center gap-2 text-celadon font-bold text-xs sm:text-sm">
             <Smartphone className="w-4 h-4 shrink-0" />
-            <span>{isKr ? 'iPhone / iPad에서 소리가 안 날 때' : 'Wichtig für iPhone & iPad (Kein Ton?)'}</span>
+            <span>
+              {isKr ? 'iPhone 무음 모드 작동 안내' : 'Ton bei aktiviertem iPhone-Stummmodus'}
+            </span>
           </div>
           <div className="text-xs text-ink/90 space-y-1.5 leading-relaxed pl-6">
             <p>
-              <strong>1. Physischer Stummschalter:</strong> An der linken Geräteseite des iPhones befindet sich der Kippschalter. Wenn der <strong>orangefarbene Streifen</strong> sichtbar ist (oder der Action Button auf Stumm steht), <strong>blockiert Apple alle Web-Stimmen im Browser</strong> vollständig. Schalte den Stummschalter auf laut!
+              {isKr
+                ? '기본 모드(자동 / 오디오 스트림)에서는 YouTube나 음악 앱처럼 미디어 세션을 사용하여 iPhone 측면 무음 스위치가 켜져 있어도 발음이 재생됩니다.'
+                : 'In den Modi „Automatisch“ und „Audio-Stream“ wird der Ton wie bei YouTube als Media-Playback ausgegeben. Dadurch ertönt die Aussprache auch dann, wenn der physische Stummschalter am iPhone aktiv ist!'}
             </p>
             <p>
-              <strong>2. Medienlautstärke:</strong> Bitte drücke die Lauter-Taste an deinem iPhone, während die App geöffnet ist.
-            </p>
-            <p>
-              <strong>3. Bluetooth:</strong> Prüfe im iOS-Kontrollzentrum, ob der Ton eventuell an verbundene Kopfhörer im Nebenzimmer gesendet wird.
+              {isKr
+                ? '소리가 너무 작거나 안 들릴 경우 iPhone 측면의 볼륨(+) 버튼을 눌러 미디어 음량을 높여주세요.'
+                : 'Über die seitlichen Lautstärke-Tasten (+ / -) deines iPhones kannst du die Lautstärke jederzeit nach Belieben anpassen.'}
             </p>
           </div>
         </div>
