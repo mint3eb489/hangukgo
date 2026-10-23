@@ -718,12 +718,18 @@ export default function App() {
   }
 
   return (
-    <div className="safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans">
+    <div
+      className={`safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans ${
+        viewMode === 'card' || viewMode === 'listening'
+          ? 'h-[100dvh] md:h-auto overflow-hidden md:overflow-visible'
+          : 'min-h-[100dvh]'
+      }`}
+    >
       {/* iPhone Status Bar Shield: prevents native iOS status bar blur from cutting off top header */}
       <div className="mobile-status-shield" aria-hidden="true" />
 
       {/* STREAMLINED HEADER WITH PROGRESSIVE DISCLOSURE */}
-      <header className="space-y-1.5 sm:space-y-2">
+      <header className="shrink-0 space-y-1.5 sm:space-y-2">
         {/* TOP BAR: 3 Zones (Brand | Desktop Mode Nav | Primary Controls & Extras Drawer Trigger) */}
         <div className="flex items-center justify-between gap-4 pb-2 sm:pb-3 border-b border-border-card">
           {/* Zone 1: Brand Logo & Calligraphic „한국GO“ Wordmark (identical across DE & KR) */}
@@ -1089,7 +1095,11 @@ export default function App() {
       </header>
 
       {/* MAIN VIEW CONTENT */}
-      <main className="mt-1.5 flex flex-col">
+      <main
+        className={`mt-1 sm:mt-1.5 flex flex-col ${
+          viewMode === 'card' || viewMode === 'listening' ? 'flex-1 min-h-0' : ''
+        }`}
+      >
         {viewMode === 'card' && (
           <FlashcardView
             deck={filteredDeck}

@@ -197,10 +197,10 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
   const progressPercent = ((currentIndex + 1) / deck.length) * 100;
 
   return (
-    <div className="mt-0.5 sm:mt-1 flex flex-col">
+    <div className="mt-0.5 sm:mt-1 flex flex-col flex-1 min-h-0 justify-between">
       {/* Top Meta Bar */}
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5 px-1 text-xs">
+      <div className="shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1 px-1 text-xs">
           <div className="flex items-center gap-1.5 text-muted tabular-nums">
             <span className="font-semibold text-obangBlue flex items-center gap-1">
               <Headphones className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-surface h-1.5 rounded-full overflow-hidden mb-2 sm:mb-2.5 border border-border-card/80">
+        <div className="w-full bg-surface h-1.5 rounded-full overflow-hidden mb-1 sm:mb-2 border border-border-card/80">
           <div
             className="bg-obangBlue h-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
@@ -240,10 +240,10 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
         </div>
       </div>
 
-      {/* 3D Flip Card Container with Hanji Paper Stack Depth */}
+      {/* 3D Flip Card Container: Dynamically adapts to smartphone display height */}
       <div
         ref={touchAreaRef}
-        className="perspective-1000 hanji-paper-stack w-full h-72 sm:h-84 md:h-[400px] relative my-0.5"
+        className="perspective-1000 hanji-paper-stack w-full flex-1 min-h-[220px] md:h-[400px] md:flex-initial relative my-1 sm:my-1.5"
       >
         <div
           onClick={handleCardFlip}
@@ -402,8 +402,8 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
         </div>
       </div>
 
-      {/* Bottom Controls: Mobile 2 Rating Buttons | Desktop Zurück + 2 Rating Buttons + Weiter */}
-      <div className="mt-2.5 sm:mt-4 pt-0.5">
+      {/* Bottom Controls: Pinned at bottom directly above fixed mobile nav bar */}
+      <div className="shrink-0 mt-auto pt-1 sm:pt-2 pb-0.5">
         <div className="grid grid-cols-2 md:grid-cols-[auto_1fr_1fr_auto] items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto">
           {/* Desktop Only: Previous Card Button */}
           <button
@@ -412,7 +412,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
               hapticTap();
               onPrev();
             }}
-            className="hidden md:flex min-h-[52px] px-4 py-3.5 rounded-2xl hanji-card hover:bg-surface text-ink font-semibold text-sm transition items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]"
+            className="hidden md:flex min-h-[50px] px-4 py-3 rounded-2xl hanji-card hover:bg-surface text-ink font-semibold text-sm transition items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]"
             title="Pfeiltaste Links"
           >
             <ArrowLeft className="w-4 h-4 shrink-0" />
@@ -422,7 +422,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
           <button
             type="button"
             onClick={() => handleRateCard(false)}
-            className="min-h-[48px] sm:min-h-[52px] py-3 sm:py-3.5 px-4 rounded-2xl bg-dancheong/12 hover:bg-dancheong/20 text-dancheong border border-dancheong/35 font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] whitespace-nowrap"
+            className="min-h-[46px] sm:min-h-[50px] py-2.5 sm:py-3.5 px-4 rounded-2xl bg-dancheong/12 hover:bg-dancheong/20 text-dancheong border border-dancheong/35 font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] whitespace-nowrap"
             title="Taste 1"
           >
             <RotateCcw className="w-4 h-4 shrink-0" />
@@ -432,7 +432,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
           <button
             type="button"
             onClick={() => handleRateCard(true)}
-            className="min-h-[48px] sm:min-h-[52px] py-3 sm:py-3.5 px-4 rounded-2xl bg-celadon hover:bg-celadon/90 text-white font-bold text-sm sm:text-base shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.98] whitespace-nowrap"
+            className="min-h-[46px] sm:min-h-[50px] py-2.5 sm:py-3.5 px-4 rounded-2xl bg-celadon hover:bg-celadon/90 text-white font-bold text-sm sm:text-base shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.98] whitespace-nowrap"
             title="Taste 2"
           >
             <Check className="w-4 h-4 shrink-0" />
@@ -446,7 +446,7 @@ export const ListeningView: React.FC<ListeningViewProps> = ({
               hapticTap();
               onNext();
             }}
-            className="hidden md:flex min-h-[52px] px-4 py-3.5 rounded-2xl hanji-card hover:bg-surface text-ink font-semibold text-sm transition items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]"
+            className="hidden md:flex min-h-[50px] px-4 py-3 rounded-2xl hanji-card hover:bg-surface text-ink font-semibold text-sm transition items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]"
             title="Pfeiltaste Rechts"
           >
             <span>{t.flashcard.next}</span>
