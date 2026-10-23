@@ -13,7 +13,7 @@ import {
   RotateCw,
   Sparkles,
   Layers,
-  Headphones,
+  Zap,
   Check,
   FolderOpen,
   Tag,
@@ -121,14 +121,14 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
   const handleApply = () => {
     if (selection) {
       onApplySelection(selection);
-      onClose();
     }
   };
 
   const getModeIcon = (mode: string) => {
     switch (mode) {
+      case 'match':
       case 'listening':
-        return <Headphones className="w-5 h-5 text-obangBlue" />;
+        return <Zap className="w-5 h-5 text-obangBlue fill-obangBlue/20" />;
       case 'quiz':
         return <Sparkles className="w-5 h-5 text-amber-500" />;
       case 'card':
@@ -223,9 +223,9 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
           </div>
         </div>
 
-        {/* Three Slot Outcome Cards (Without 1/3, 2/3, 3/3 badges) */}
+        {/* Two Slot Outcome Cards: Modus & Kategorie (ohne Unterkategorie) */}
         {selection ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {/* 1. Spielmodus */}
             <div className="bg-surface p-3 rounded-xl border border-border-card space-y-1">
               <div className="flex items-center text-[11px] text-muted">
@@ -254,23 +254,9 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
                 </span>
               </div>
             </div>
-
-            {/* 3. Unterkategorie */}
-            <div className="bg-surface p-3 rounded-xl border border-border-card space-y-1">
-              <div className="flex items-center text-[11px] text-muted">
-                <span className="flex items-center gap-1 font-medium truncate">
-                  <FolderOpen className="w-3.5 h-3.5 text-amber-500" /> {t.sojuModal.subCategoryLabel}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-1 pt-0.5">
-                <span className="font-bold text-xs sm:text-sm text-ink truncate" title={selection.subcategory}>
-                  {selection.subcategory}
-                </span>
-              </div>
-            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             <div className="bg-surface/50 p-3 rounded-xl border border-dashed border-border-card space-y-1">
               <div className="flex items-center text-[11px] text-muted">
                 <span className="flex items-center gap-1 font-medium">
@@ -289,17 +275,6 @@ export const SojuRouletteModal: React.FC<SojuRouletteModalProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="font-bold text-xs sm:text-sm text-muted">?</span>
-              </div>
-            </div>
-
-            <div className="bg-surface/50 p-3 rounded-xl border border-dashed border-border-card space-y-1">
-              <div className="flex items-center text-[11px] text-muted">
-                <span className="flex items-center gap-1 font-medium truncate">
-                  <FolderOpen className="w-3.5 h-3.5 text-amber-500" /> {t.sojuModal.subCategoryLabel}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-1 pt-0.5">
                 <span className="font-bold text-xs sm:text-sm text-muted">?</span>
               </div>
             </div>

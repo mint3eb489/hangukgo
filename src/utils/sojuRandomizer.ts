@@ -1,6 +1,6 @@
 import { VocabItem, VocabCategory } from '../data/vocabData';
 
-export type GameMode = 'card' | 'listening' | 'quiz';
+export type GameMode = 'card' | 'match' | 'quiz';
 
 export type SojuCategory = 'all' | VocabCategory | 'custom';
 
@@ -37,10 +37,10 @@ export const GAME_MODES: { id: GameMode; label: string; iconName: string; desc: 
     desc: 'Klassisches Karteikarten-Training mit Spaced Repetition (SRS)',
   },
   {
-    id: 'listening',
-    label: 'Hören',
-    iconName: 'Headphones',
-    desc: 'Erst koreanische Aussprache anhören, dann Bedeutung aufdecken',
+    id: 'match',
+    label: 'Match',
+    iconName: 'Zap',
+    desc: 'Koreanisch ⇄ Deutsch 짝맞추기: Schnelligkeit, Präzision & Wortpaare',
   },
   {
     id: 'quiz',
@@ -74,7 +74,7 @@ export const CATEGORY_LABELS_KR: Record<SojuCategory, string> = {
 
 export const GAME_MODES_KR: Record<GameMode, string> = {
   card: '플래시카드',
-  listening: '듣기',
+  match: '짝맞추기',
   quiz: '퀴즈',
 };
 
@@ -133,40 +133,33 @@ export function getAvailableSojuCombos(items: VocabItem[], lang: 'de' | 'kr' = '
 }
 
 /**
- * Randomly picks a game mode (Karten, Hören, Quiz) and a matching category & subcategory combo.
- * Category strictly picks between Nomen, Verben, Adjektive, Adverbien, Ausdrücke, Grammatik.
+ * Randomly picks a game mode (Karten, Match, Quiz) and a category (Nomen, Verben, Adjektive, etc.).
+ * Constrained strictly to mode and category without subcategory (subcategory is always 'all').
  */
 export function generateRandomSojuSelection(items: VocabItem[], lang: 'de' | 'kr' = 'de'): SojuSelection {
   const isKr = lang === 'kr';
-  const combos = getAvailableSojuCombos(items, lang);
+  const labels = isKr ? CATEGORY_LABELS_KR : CATEGORY_LABELS;
 
-  // Fallback if no items
-  if (combos.length === 0) {
-    const randomModeObj = GAME_MODES[Math.floor(Math.random() * GAME_MODES.length)];
-    const randomCat = SOJU_CORE_CATEGORIES[Math.floor(Math.random() * SOJU_CORE_CATEGORIES.length)];
-    const labels = isKr ? CATEGORY_LABELS_KR : CATEGORY_LABELS;
-    return {
-      mode: randomModeObj.id,
-      modeLabel: isKr ? GAME_MODES_KR[randomModeObj.id] : randomModeObj.label,
-      category: randomCat,
-      categoryLabel: labels[randomCat],
-      subcategory: 'Allgemein',
-      itemCount: 0,
-    };
-  }
+  // Filter core categories that have items in the deck
+  const activeCategories = SOJU_CORE_CATEGORIES.filter((cat) =>
+    items.some((i) => i.cat === cat)
+  );
 
-  // 1. Pick random game mode: Karten, Hören, or Quiz
+  const availableCats = activeCategories.length > 0 ? activeCategories : SOJU_CORE_CATEGORIES;
+
+  // 1. Pick random game mode: Karten (card), Match (match), or Quiz (quiz)
   const randomModeObj = GAME_MODES[Math.floor(Math.random() * GAME_MODES.length)];
 
-  // 2. Pick random (category, subcategory) combo from the 6 core categories
-  const randomCombo = combos[Math.floor(Math.random() * combos.length)];
+  // 2. Pick random category from the available core categories
+  const randomCat = availableCats[Math.floor(Math.random() * availableCats.length)];
+  const catCount = items.filter((i) => i.cat === randomCat).length;
 
   return {
     mode: randomModeObj.id,
     modeLabel: isKr ? GAME_MODES_KR[randomModeObj.id] : randomModeObj.label,
-    category: randomCombo.category,
-    categoryLabel: randomCombo.categoryLabel,
-    subcategory: randomCombo.subcategory,
-    itemCount: randomCombo.itemCount,
+    category: randomCat,
+    categoryLabel: labels[randomCat] || randomCat,
+    subcategory: 'all', // Keine Unterkategorie
+    itemCount: catCount,
   };
 }

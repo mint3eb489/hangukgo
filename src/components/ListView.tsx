@@ -13,6 +13,8 @@ interface ListViewProps {
   items: VocabItem[];
   srsMap?: SrsMap;
   lang?: AppLanguage;
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
   onMarkSrs?: (id: string, success: boolean) => void;
   onDeleteItem?: (id: string) => void;
   onOpenUpload?: () => void;
@@ -21,10 +23,11 @@ interface ListViewProps {
 export const ListView: React.FC<ListViewProps> = ({
   items,
   lang = 'de',
+  searchQuery = '',
   onOpenUpload,
 }) => {
   const t = translations[lang];
-  const [search, setSearch] = useState('');
+  const search = searchQuery;
 
   const filtered = items.filter((item) => {
     if (!search.trim()) return true;
@@ -54,30 +57,17 @@ export const ListView: React.FC<ListViewProps> = ({
   });
 
   return (
-    <section className="mt-1.5 flex flex-col max-h-[72vh]">
-      {/* Search Input */}
-      <div className="mb-3 relative">
-        <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t.list.searchPlaceholder}
-          className="w-full hanji-card rounded-2xl pl-11 pr-10 py-3 text-sm text-ink placeholder-muted focus:outline-none focus:border-celadon"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => {
-              hapticTap();
-              setSearch('');
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted hover:text-ink rounded-lg"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+    <section className="mt-1 flex flex-col flex-1 min-h-0">
+      {/* Active Search Result Pill (shows count when filtering) */}
+      {search && (
+        <div className="mb-2 px-1 text-xs text-muted flex items-center justify-between">
+          <span>
+            {lang === 'kr'
+              ? `검색 결과: „${search}“ (${filtered.length}개)`
+              : `Suchergebnisse für „${search}“ (${filtered.length} Treffer)`}
+          </span>
+        </div>
+      )}
 
       {/* List Container with Hanji Paper Elevation */}
       <div className="flex-grow overflow-y-auto rounded-3xl hanji-card-elevated divide-y divide-border-card">

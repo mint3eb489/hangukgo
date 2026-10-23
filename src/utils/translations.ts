@@ -4,7 +4,8 @@ export interface Translations {
   // Navigation / Header
   modes: {
     card: string;
-    listening: string;
+    match: string;
+    listening?: string;
     quiz: string;
     list: string;
   };
@@ -90,6 +91,26 @@ export interface Translations {
     exampleLabel: string;
     srsStageLabel: string;
     speedSlowTitle: string;
+  };
+  speedMatch: {
+    badge: string;
+    pairs: string;
+    matchedCount: (current: number, total: number) => string;
+    time: string;
+    streak: (count: number) => string;
+    mistakes: (count: number) => string;
+    nextRound: string;
+    playAgain: string;
+    roundCompleteTitle: string;
+    roundCompleteDesc: (time: string, mistakes: number) => string;
+    pairSize: (size: number) => string;
+    rounds: string;
+    roundOf: (current: number, total: number) => string;
+    nextRoundBtn: (next: number) => string;
+    newGame: string;
+    emptyTitle: string;
+    emptyDesc: string;
+    instruction: string;
   };
   quiz: {
     questionOf: (current: number, total: number) => string;
@@ -199,6 +220,7 @@ export const translations: Record<AppLanguage, Translations> = {
   de: {
     modes: {
       card: 'Karten',
+      match: 'Match',
       listening: 'Hören',
       quiz: 'Quiz',
       list: 'Liste',
@@ -285,6 +307,27 @@ export const translations: Record<AppLanguage, Translations> = {
       exampleLabel: 'Beispielsatz (예문)',
       srsStageLabel: 'SRS Stufe:',
       speedSlowTitle: 'Langsamere Aussprache (0.75x)',
+    },
+    speedMatch: {
+      badge: '짝맞추기',
+      pairs: 'Paare',
+      matchedCount: (current, total) => `${current} / ${total} Paare gefunden`,
+      time: 'Zeit',
+      streak: (count) => `${count}er Serie!`,
+      mistakes: (count) => `${count} ${count === 1 ? 'Fehler' : 'Fehler'}`,
+      nextRound: 'Nächste Runde',
+      playAgain: 'Nochmal spielen',
+      roundCompleteTitle: 'Feld aufgeräumt! 대단해요! 🎉',
+      roundCompleteDesc: (time, mistakes) =>
+        `Zeit: ${time} · ${mistakes === 0 ? 'Fehlerfrei! Perfektes Gedächtnis ⭐' : `${mistakes} Fehlversuch(e)`}`,
+      pairSize: (size) => `${size} Paare`,
+      rounds: 'Runden',
+      roundOf: (current, total) => `Runde ${current} von ${total}`,
+      nextRoundBtn: (next) => `Runde ${next} starten`,
+      newGame: 'Neues Spiel starten',
+      emptyTitle: 'Keine Vokabeln zum Matchen',
+      emptyDesc: 'In dieser Kategorie gibt es gerade keine passenden Vokabeln. Ändere die Filtereinstellungen oder füge neue Vokabeln hinzu.',
+      instruction: 'Tippe auf ein koreanisches Wort und die passende deutsche Bedeutung!',
     },
     quiz: {
       questionOf: (current, total) => `Frage ${current} von ${total}`,
@@ -392,6 +435,7 @@ export const translations: Record<AppLanguage, Translations> = {
   kr: {
     modes: {
       card: '플래시카드',
+      match: '짝맞추기',
       listening: '듣기',
       quiz: '퀴즈',
       list: '단어장',
@@ -478,6 +522,27 @@ export const translations: Record<AppLanguage, Translations> = {
       exampleLabel: '예문',
       srsStageLabel: 'SRS 단계:',
       speedSlowTitle: '느린 발음 듣기 (0.75x)',
+    },
+    speedMatch: {
+      badge: '짝맞추기',
+      pairs: '단어 쌍',
+      matchedCount: (current, total) => `${current} / ${total} 쌍 완료`,
+      time: '시간',
+      streak: (count) => `${count}연속 정답!`,
+      mistakes: (count) => `${count}회 오답`,
+      nextRound: '다음 라운드',
+      playAgain: '다시 플레이',
+      roundCompleteTitle: '필드 정리 완료! 대단해요! 🎉',
+      roundCompleteDesc: (time, mistakes) =>
+        `소요 시간: ${time} · ${mistakes === 0 ? '무결점 완벽 매칭! ⭐' : `${mistakes}회 실수`}`,
+      pairSize: (size) => `${size}쌍 모드`,
+      rounds: '라운드',
+      roundOf: (current, total) => `${current} / ${total} 라운드`,
+      nextRoundBtn: (next) => `다음 라운드 (${next}) 시작`,
+      newGame: '새 게임 시작',
+      emptyTitle: '매칭할 단어가 없습니다',
+      emptyDesc: '현재 선택한 카테고리에 단어가 없습니다. 필터를 변경하거나 단어를 추가해 보세요.',
+      instruction: '한국어 단어와 일치하는 독일어 뜻 카드를 빠르게 터치하세요!',
     },
     quiz: {
       questionOf: (current, total) => `문제 ${current} / ${total}`,

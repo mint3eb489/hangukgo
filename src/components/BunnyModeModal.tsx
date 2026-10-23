@@ -4,7 +4,7 @@ import {
   RotateCw,
   Check,
   Layers,
-  Headphones,
+  Zap,
   Sparkles,
   List,
 } from 'lucide-react';
@@ -15,7 +15,7 @@ import { AppLanguage } from '../utils/translations';
 import { hapticTap } from '../utils/haptics';
 import confetti from 'canvas-confetti';
 
-export type BunnyViewMode = 'card' | 'listening' | 'quiz' | 'list';
+export type BunnyViewMode = 'card' | 'match' | 'quiz' | 'list';
 
 interface BunnyModeModalProps {
   isOpen: boolean;
@@ -88,7 +88,6 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
     if (!hopResult || hopResult.items.length === 0) return;
     hapticTap();
     onStartBunnyList(hopResult.items, selectedMode, hopResult.sourceSubcategories);
-    onClose();
   };
 
   return (
@@ -263,7 +262,7 @@ export const BunnyModeModal: React.FC<BunnyModeModalProps> = ({
           {(
             [
               { id: 'card', labelDe: 'Karten', labelKr: '카드', icon: Layers },
-              { id: 'listening', labelDe: 'Hören', labelKr: '듣기', icon: Headphones },
+              { id: 'match', labelDe: 'Match', labelKr: '매칭', icon: Zap },
               { id: 'quiz', labelDe: 'Quiz', labelKr: '퀴즈', icon: Sparkles },
               { id: 'list', labelDe: 'Liste', labelKr: '목록', icon: List },
             ] as const

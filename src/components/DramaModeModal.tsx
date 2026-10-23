@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Layers, Headphones, Sparkles, List, Check, Play } from 'lucide-react';
+import { X, Layers, Zap, Sparkles, List, Check, Play } from 'lucide-react';
 import { RetroTvIcon } from './RetroTvIcon';
 import { VocabItem } from '../data/vocabData';
 import { AppLanguage } from '../utils/translations';
 import { hapticTap } from '../utils/haptics';
 import confetti from 'canvas-confetti';
 
-export type DramaViewMode = 'card' | 'listening' | 'quiz' | 'list';
+export type DramaViewMode = 'card' | 'match' | 'quiz' | 'list';
 
 interface DramaModeModalProps {
   isOpen: boolean;
@@ -15,7 +15,9 @@ interface DramaModeModalProps {
   currentShowSub?: string;
   currentMode?: DramaViewMode;
   dramaItems?: VocabItem[];
+  isDramaActive?: boolean;
   onStartDramaMode: (subcategory: string, mode: DramaViewMode) => void;
+  onExitDramaMode?: () => void;
 }
 
 export const DramaModeModal: React.FC<DramaModeModalProps> = ({
@@ -25,7 +27,9 @@ export const DramaModeModal: React.FC<DramaModeModalProps> = ({
   currentShowSub = '',
   currentMode = 'card',
   dramaItems = [],
+  isDramaActive = false,
   onStartDramaMode,
+  onExitDramaMode,
 }) => {
   const isKr = lang === 'kr';
 
@@ -89,7 +93,6 @@ export const DramaModeModal: React.FC<DramaModeModalProps> = ({
       // ignore
     }
     onStartDramaMode(targetSub, selectedMode);
-    onClose();
   };
 
   return (
@@ -116,11 +119,13 @@ export const DramaModeModal: React.FC<DramaModeModalProps> = ({
               </span>
             </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl text-muted hover:text-ink hover:bg-surface transition shrink-0"
             aria-label={isKr ? '닫기' : 'Schließen'}
+            title={isKr ? '닫기' : 'Schließen'}
           >
             <X className="w-5 h-5" />
           </button>
@@ -247,7 +252,7 @@ export const DramaModeModal: React.FC<DramaModeModalProps> = ({
               {(
                 [
                   { id: 'card', labelDe: 'Karten', labelKr: '카드', icon: Layers },
-                  { id: 'listening', labelDe: 'Hören', labelKr: '듣기', icon: Headphones },
+                  { id: 'match', labelDe: 'Match', labelKr: '매칭', icon: Zap },
                   { id: 'quiz', labelDe: 'Quiz', labelKr: '퀴즈', icon: Sparkles },
                   { id: 'list', labelDe: 'Liste', labelKr: '목록', icon: List },
                 ] as const

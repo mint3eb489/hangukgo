@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   TopikLevel,
   VocabItem,
@@ -13,7 +13,7 @@ import {
   isCardDue,
 } from './utils/srs';
 import { FlashcardView } from './components/FlashcardView';
-import { ListeningView } from './components/ListeningView';
+import { SpeedMatchView } from './components/SpeedMatchView';
 import { QuizView } from './components/QuizView';
 import { ListView } from './components/ListView';
 import { SyncModal } from './components/SyncModal';
@@ -31,6 +31,7 @@ import { generateBunnyHopList } from './utils/bunnyRandomizer';
 import { TaegeukThemeToggle } from './components/TaegeukThemeToggle';
 import { ExtrasDrawer } from './components/ExtrasDrawer';
 import { DeckFilterPopover, CategoryFilter } from './components/DeckFilterPopover';
+import { SrsInfoTooltip } from './components/SrsInfoTooltip';
 import { GatHatIcon } from './components/GatHatIcon';
 import { DancheongSettingsIcon } from './components/DancheongSettingsIcon';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -54,11 +55,12 @@ import { AppLanguage, translations } from './utils/translations';
 import confetti from 'canvas-confetti';
 import {
   Layers,
-  Headphones,
+  Zap,
   Sparkles,
   List,
   RotateCw,
   X,
+  Search,
 } from 'lucide-react';
 
 export default function App() {
@@ -162,14 +164,19 @@ export default function App() {
     }
   });
 
-  // View mode: 'card' | 'listening' | 'quiz' | 'list'
-  const [viewMode, setViewMode] = useState<'card' | 'listening' | 'quiz' | 'list'>('card');
+  // View mode: 'card' | 'match' | 'quiz' | 'list'
+  const [viewMode, setViewMode] = useState<'card' | 'match' | 'quiz' | 'list'>('card');
 
   // Filters & State
   const [category, setCategory] = useState<CategoryFilter>('all');
   const [subcategory, setSubcategory] = useState<string>('all');
   const [onlyDue, setOnlyDue] = useState<boolean>(false);
   const [krToDe, setKrToDe] = useState<boolean>(true);
+
+  // Search state for List View (compact top-bar Lupen-Icon)
+  const [listSearch, setListSearch] = useState<string>('');
+  const [isListSearchOpen, setIsListSearchOpen] = useState<boolean>(false);
+  const listSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Deck state
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -301,8 +308,11 @@ export default function App() {
     return topikLevel === 'TOPIK I' ? topik1AllItems : topik2AllItems;
   }, [specialPlayMode, bunnyDeck, topikLevel, topik1AllItems, topik2AllItems, dramaAllItems]);
 
+  const [isSojuActive, setIsSojuActive] = useState<boolean>(false);
+
   // Apply random selection from Soju Roulette
   const handleApplySojuSelection = useCallback((sel: SojuSelection) => {
+    setIsSojuActive(true);
     setSpecialPlayMode('none');
     setViewMode(sel.mode);
     setCategory(sel.category);
@@ -310,10 +320,12 @@ export default function App() {
     setCurrentIndex(0);
     setIsFlipped(false);
     setDeckOrder([]);
+    setIsSojuModalOpen(false);
   }, []);
 
   // Start Drama Mode
   const handleStartDramaMode = useCallback((dramaSub: string, mode: DramaViewMode) => {
+    setIsSojuActive(false);
     setSpecialPlayMode('drama');
     setViewMode(mode);
     setCategory('all');
@@ -321,11 +333,27 @@ export default function App() {
     setCurrentIndex(0);
     setIsFlipped(false);
     setDeckOrder([]);
+    setIsDramaModalOpen(false);
   }, []);
+
+  // Exit Cultural Mode safely back to normal vocab lists
+  const handleExitCultureMode = useCallback(() => {
+    hapticTap();
+    setSpecialPlayMode('none');
+    setIsSojuActive(false);
+    setCategory('all');
+    setSubcategory('all');
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setDeckOrder([]);
+  }, []);
+
+  const handleExitDrama = handleExitCultureMode;
 
   // Start Bunny Mode
   const handleStartBunnyList = useCallback(
     (items: VocabItem[], mode: BunnyViewMode, sourceSubs: string[]) => {
+      setIsSojuActive(false);
       setBunnyDeck(items);
       setBunnySourceSubs(sourceSubs);
       setSpecialPlayMode('bunny');
@@ -335,9 +363,32 @@ export default function App() {
       setCurrentIndex(0);
       setIsFlipped(false);
       setDeckOrder([]);
+      setIsBunnyModalOpen(false);
     },
     []
   );
+
+  // Closing culture mode options modal: If this mode was active, closing it automatically terminates the mode
+  const handleCloseDramaModal = useCallback(() => {
+    setIsDramaModalOpen(false);
+    if (specialPlayMode === 'drama') {
+      handleExitCultureMode();
+    }
+  }, [specialPlayMode, handleExitCultureMode]);
+
+  const handleCloseBunnyModal = useCallback(() => {
+    setIsBunnyModalOpen(false);
+    if (specialPlayMode === 'bunny') {
+      handleExitCultureMode();
+    }
+  }, [specialPlayMode, handleExitCultureMode]);
+
+  const handleCloseSojuModal = useCallback(() => {
+    setIsSojuModalOpen(false);
+    if (isSojuActive) {
+      handleExitCultureMode();
+    }
+  }, [isSojuActive, handleExitCultureMode]);
 
   const handleQuickRehopBunny = useCallback(() => {
     hapticTap();
@@ -468,9 +519,9 @@ export default function App() {
         return { ...prev, [id]: updated };
       });
 
-      // ONLY advance the card in Flashcard and Listening modes!
-      // In Quiz and List modes, the view manages its own progression and MUST NOT trigger handleNext()!
-      if (viewMode === 'card' || viewMode === 'listening') {
+      // ONLY advance the card in Flashcard mode!
+      // In Match, Quiz and List modes, the view manages its own progression and MUST NOT trigger handleNext()!
+      if (viewMode === 'card') {
         if (!onlyDue || !success) {
           handleNext();
         }
@@ -720,7 +771,7 @@ export default function App() {
   return (
     <div
       className={`safe-app-shell bg-hanji text-ink transition-colors duration-200 flex flex-col max-w-5xl mx-auto select-none relative font-sans ${
-        viewMode === 'card' || viewMode === 'listening'
+        viewMode === 'card'
           ? 'h-[100dvh] md:h-auto overflow-hidden md:overflow-visible'
           : 'min-h-[100dvh]'
       }`}
@@ -765,16 +816,16 @@ export default function App() {
               type="button"
               onClick={() => {
                 hapticTap();
-                setViewMode('listening');
+                setViewMode('match');
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap ${
-                viewMode === 'listening'
+                viewMode === 'match'
                   ? 'bg-card text-ink shadow-2xs'
                   : 'text-muted hover:text-ink'
               }`}
             >
-              <Headphones className="w-3.5 h-3.5" />
-              <span>{t.modes.listening}</span>
+              <Zap className="w-3.5 h-3.5" />
+              <span>{t.modes.match}</span>
             </button>
 
             <button
@@ -812,12 +863,13 @@ export default function App() {
 
           {/* Zone 3: Responsive TOPIK Switcher, Taegeuk Theme Toggle & Extras Drawer Button */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Mobile Only: Fixed-width Single TOPIK Toggle Button (Never changes width between TOPIK I & TOPIK II) */}
+            {/* Mobile Only: Fixed-width Single TOPIK Toggle Button */}
             <button
               type="button"
               onClick={() => {
                 hapticTap();
                 setSpecialPlayMode('none');
+                setIsSojuActive(false);
                 setTopikLevel(topikLevel === 'TOPIK I' ? 'TOPIK II' : 'TOPIK I');
                 setDeckOrder([]);
               }}
@@ -827,9 +879,7 @@ export default function App() {
                   : `Klicken zum Wechseln auf ${topikLevel === 'TOPIK I' ? 'TOPIK II' : 'TOPIK I'}`
               }
               className={`md:hidden min-h-[38px] w-[88px] px-2 py-1.5 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1 whitespace-nowrap shadow-2xs ${
-                specialPlayMode !== 'none'
-                  ? 'bg-surface text-muted border-border-card'
-                  : topikLevel === 'TOPIK I'
+                topikLevel === 'TOPIK I'
                   ? 'bg-obangBlue text-white border-obangBlue'
                   : 'bg-celadon text-white border-celadon'
               }`}
@@ -930,174 +980,116 @@ export default function App() {
           </div>
         </div>
 
-        {/* UNIFIED SUB-BAR: Single Filter Popover Button + Interactive SRS Status */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">
-          <DeckFilterPopover
-            isOpen={isFilterOpen}
-            onToggleOpen={() => setIsFilterOpen((prev) => !prev)}
-            onClose={() => setIsFilterOpen(false)}
-            category={category}
-            onSelectCategory={(cat) => {
-              setCategory(cat);
-              setCurrentIndex(0);
-            }}
-            subcategory={subcategory}
-            onSelectSubcategory={(sub) => {
-              setSubcategory(sub);
-              setCurrentIndex(0);
-            }}
-            availableSubcategories={availableSubcategories}
-            getSubcategoryCount={(sub) =>
-              allLevelItems.filter(
-                (i) =>
-                  (i.sub && i.sub.trim() ? i.sub.trim() : 'Allgemein') === sub &&
-                  (category === 'all' || category === 'custom' || i.cat === category)
-              ).length
-            }
-            categoryCounts={counts}
-            customCount={counts.custom}
-            deckCount={filteredDeck.length}
-            onlyDue={onlyDue}
-            dueCount={stats.due}
-            onToggleOnlyDue={() => setOnlyDue((prev) => !prev)}
-            krToDe={krToDe}
-            onToggleDirection={() => {
-              setKrToDe((prev) => !prev);
-              setIsFlipped(false);
-            }}
-            onShuffle={handleShuffle}
-            lang={language}
-            isDramaMode={specialPlayMode === 'drama'}
-          />
-
-          {/* Interactive SRS Metrics (Clicking "due" toggles onlyDue filter directly) */}
-          <div className="flex items-center gap-2 text-xs text-muted tabular-nums ml-auto">
-            <button
-              type="button"
-              onClick={() => {
-                hapticTap();
-                setOnlyDue(!onlyDue);
+        {/* UNIFIED SUB-BAR: Single Filter Popover Button + (List Mode Search Lupen-Icon) + SrsInfoTooltip */}
+        <div className="flex items-center justify-between gap-2 pt-0.5 text-xs">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <DeckFilterPopover
+              isOpen={isFilterOpen}
+              onToggleOpen={() => setIsFilterOpen((prev) => !prev)}
+              onClose={() => setIsFilterOpen(false)}
+              category={category}
+              onSelectCategory={(cat) => {
+                setCategory(cat);
+                setCurrentIndex(0);
               }}
-              title={t.actions.dueOnlyTitle}
-              className={`px-2 py-0.5 rounded-lg font-semibold transition flex items-center gap-1 ${
-                onlyDue
-                  ? 'bg-ochre text-white shadow-2xs'
-                  : 'text-ochre hover:bg-ochre/12'
-              }`}
-            >
-              <span>
-                {stats.due} {t.stats.due}
-              </span>
-              {onlyDue && <span className="text-[10px] leading-none">×</span>}
-            </button>
-            <span aria-hidden="true">·</span>
-            <span className="text-celadon font-semibold">
-              {stats.mastered} {t.stats.mastered}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span className="text-obangBlue font-semibold">
-              {stats.learning} {t.stats.learning}
-            </span>
-          </div>
-        </div>
+              subcategory={subcategory}
+              onSelectSubcategory={(sub) => {
+                setSubcategory(sub);
+                setCurrentIndex(0);
+              }}
+              availableSubcategories={availableSubcategories}
+              getSubcategoryCount={(sub) =>
+                allLevelItems.filter(
+                  (i) =>
+                    (i.sub && i.sub.trim() ? i.sub.trim() : 'Allgemein') === sub &&
+                    (category === 'all' || category === 'custom' || i.cat === category)
+                ).length
+              }
+              categoryCounts={counts}
+              customCount={counts.custom}
+              deckCount={filteredDeck.length}
+              onlyDue={onlyDue}
+              dueCount={stats.due}
+              onToggleOnlyDue={() => setOnlyDue((prev) => !prev)}
+              krToDe={krToDe}
+              onToggleDirection={() => {
+                setKrToDe((prev) => !prev);
+                setIsFlipped(false);
+              }}
+              onShuffle={handleShuffle}
+              lang={language}
+              isDramaMode={specialPlayMode === 'drama'}
+            />
 
-        {/* ACTIVE SPECIAL MODE BANNER (Drama Mode or Bunny Mode) */}
-        {specialPlayMode !== 'none' && (
-          <div
-            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-2xl border text-xs ${
-              specialPlayMode === 'drama'
-                ? 'bg-obangBlue/10 border-obangBlue/30 text-ink'
-                : 'bg-ochre/10 border-ochre/30 text-ink'
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {specialPlayMode === 'drama' ? (
-                <RetroTvIcon className="w-5 h-5 shrink-0" idPrefix="active-drama-banner" />
-              ) : (
-                <BunnyEarsIcon className="w-5 h-5 shrink-0" idPrefix="active-bunny-banner" />
-              )}
-              <span className="font-bold truncate">
-                {specialPlayMode === 'drama'
-                  ? language === 'kr'
-                    ? `드라마 모드 · ${subcategory}`
-                    : `Drama-Modus · ${subcategory}`
-                  : language === 'kr'
-                  ? `토끼 모드 · ${bunnyDeck.length}단어 (${bunnySourceSubs.length}개 리스트 믹스)`
-                  : `Bunny-Modus · ${bunnyDeck.length} Wörter (${bunnySourceSubs.length} Listen gemischt)`}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              {specialPlayMode === 'drama' ? (
-                <>
-                  {availableSubcategories.length > 1 && (
-                    <select
-                      value={subcategory}
-                      onChange={(e) => {
-                        hapticTap();
-                        setSubcategory(e.target.value);
-                        setCurrentIndex(0);
-                        setIsFlipped(false);
-                        setDeckOrder([]);
-                      }}
-                      className="bg-card border border-border-card text-ink text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-obangBlue cursor-pointer max-w-[140px] sm:max-w-[190px] truncate"
-                      aria-label={language === 'kr' ? 'K-드라마 시리즈 선택' : 'K-Drama Serie auswählen'}
-                    >
-                      {availableSubcategories.map((sub) => {
-                        const count = dramaAllItems.filter(
-                          (i) => (i.sub?.trim() || 'Allgemein') === sub
-                        ).length;
-                        return (
-                          <option key={sub} value={sub}>
-                            {sub} ({count})
-                          </option>
-                        );
-                      })}
-                    </select>
-                  )}
+            {/* List Mode Search: Compact Lupen-Icon button next to Category Dropdown */}
+            {viewMode === 'list' && (
+              <div className="relative flex items-center">
+                {!isListSearchOpen && !listSearch ? (
                   <button
                     type="button"
                     onClick={() => {
                       hapticTap();
-                      setIsDramaModalOpen(true);
+                      setIsListSearchOpen(true);
+                      setTimeout(() => listSearchInputRef.current?.focus(), 60);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] transition"
+                    title={language === 'kr' ? '단어 검색' : 'In Liste suchen'}
+                    aria-label={language === 'kr' ? '단어 검색' : 'In Liste suchen'}
+                    className="min-h-[36px] sm:min-h-[38px] px-2.5 py-1.5 rounded-xl border border-border-card bg-surface hover:bg-stone-200 dark:hover:bg-stone-700/60 text-muted hover:text-ink transition flex items-center gap-1.5 shadow-2xs active:scale-95"
                   >
-                    {language === 'kr' ? '채널 변경' : 'Serie wählen'}
+                    <Search className="w-3.5 h-3.5 text-celadon shrink-0" />
+                    <span className="hidden sm:inline text-xs font-semibold">
+                      {language === 'kr' ? '검색' : 'Suchen'}
+                    </span>
                   </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleQuickRehopBunny}
-                  className="px-2.5 py-1 rounded-lg bg-card hover:bg-surface border border-border-card font-semibold text-[11px] flex items-center gap-1 transition"
-                >
-                  <RotateCw className="w-3 h-3" />
-                  <span>{language === 'kr' ? '다시 점프' : 'Neu hüpfen'}</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap();
-                  setSpecialPlayMode('none');
-                  setSubcategory('all');
-                  setCurrentIndex(0);
-                }}
-                className="p-1 rounded-lg hover:bg-card text-muted hover:text-ink transition"
-                title={language === 'kr' ? '일반 모드로 돌아가기' : 'Modus beenden'}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                ) : (
+                  <div className="relative flex items-center min-w-[130px] max-w-[200px] sm:max-w-[260px] animate-pop">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 text-celadon pointer-events-none" />
+                    <input
+                      ref={listSearchInputRef}
+                      type="text"
+                      value={listSearch}
+                      onChange={(e) => setListSearch(e.target.value)}
+                      placeholder={t.list.searchPlaceholder}
+                      className="w-full bg-card border border-celadon/60 rounded-xl pl-8 pr-7 py-1 text-xs text-ink placeholder-muted focus:outline-none focus:ring-1 focus:ring-celadon shadow-2xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticTap();
+                        if (listSearch) {
+                          setListSearch('');
+                        } else {
+                          setIsListSearchOpen(false);
+                        }
+                      }}
+                      className="absolute right-1.5 p-1 text-muted hover:text-ink rounded-lg"
+                      title={language === 'kr' ? '닫기' : 'Schließen'}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Interactive SRS Status Tooltip Point (eliminates mobile layout shift) */}
+          <div className="shrink-0 ml-auto">
+            <SrsInfoTooltip
+              stats={stats}
+              deckCount={filteredDeck.length}
+              onlyDue={onlyDue}
+              onToggleOnlyDue={() => setOnlyDue((prev) => !prev)}
+              lang={language}
+            />
+          </div>
+        </div>
       </header>
 
       {/* MAIN VIEW CONTENT */}
       <main
         className={`mt-1 sm:mt-1.5 flex flex-col ${
-          viewMode === 'card' || viewMode === 'listening' ? 'flex-1 min-h-0' : ''
+          viewMode === 'card' || viewMode === 'match' ? 'flex-1 min-h-0' : ''
         }`}
       >
         {viewMode === 'card' && (
@@ -1117,25 +1109,31 @@ export default function App() {
               setSyncModalTab('import');
               setIsSyncModalOpen(true);
             }}
+            isRamyeonRunning={isRamyeonRunning}
+            ramyeonTimeLeft={ramyeonTimeLeft}
+            onOpenRamyeon={() => setIsRamyeonModalOpen(true)}
+            specialPlayMode={specialPlayMode}
+            isSojuActive={isSojuActive}
+            onOpenDrama={() => setIsDramaModalOpen(true)}
+            onOpenBunny={() => setIsBunnyModalOpen(true)}
+            onOpenSoju={() => setIsSojuModalOpen(true)}
           />
         )}
 
-        {viewMode === 'listening' && (
-          <ListeningView
+        {viewMode === 'match' && (
+          <SpeedMatchView
             deck={filteredDeck}
-            totalLevelCount={allLevelItems.length}
-            currentIndex={currentIndex}
-            isFlipped={isFlipped}
+            categoryKey={`${topikLevel}_${category}_${subcategory}_${specialPlayMode}_${onlyDue}`}
             srsMap={srsMap}
             lang={language}
-            onFlip={handleFlip}
-            onNext={handleNext}
-            onPrev={handlePrev}
             onMarkSrs={handleMarkSrs}
             onOpenUpload={() => {
               setSyncModalTab('import');
               setIsSyncModalOpen(true);
             }}
+            isRamyeonRunning={isRamyeonRunning}
+            ramyeonTimeLeft={ramyeonTimeLeft}
+            onOpenRamyeon={() => setIsRamyeonModalOpen(true)}
           />
         )}
 
@@ -1158,6 +1156,8 @@ export default function App() {
             items={filteredDeck}
             srsMap={srsMap}
             lang={language}
+            searchQuery={listSearch}
+            onSearchChange={setListSearch}
             onMarkSrs={handleMarkSrs}
             onDeleteItem={handleDeleteItem}
             onOpenUpload={() => {
@@ -1191,11 +1191,7 @@ export default function App() {
             <kbd className="px-1.5 py-0.5 bg-surface text-ink border border-border-card rounded font-mono">
               2
             </kbd>{' '}
-            알고 있음 · 듣기 모드:{' '}
-            <kbd className="px-1.5 py-0.5 bg-surface text-ink border border-border-card rounded font-mono">
-              A
-            </kbd>{' '}
-            발음 듣기
+            알고 있음
           </>
         ) : (
           <>
@@ -1218,11 +1214,7 @@ export default function App() {
             <kbd className="px-1.5 py-0.5 bg-surface text-ink border border-border-card rounded font-mono">
               2
             </kbd>{' '}
-            Gelernt · Im 듣기-Modus:{' '}
-            <kbd className="px-1.5 py-0.5 bg-surface text-ink border border-border-card rounded font-mono">
-              A
-            </kbd>{' '}
-            Audio
+            Gelernt
           </>
         )}
       </footer>
@@ -1254,17 +1246,17 @@ export default function App() {
           type="button"
           onClick={() => {
             hapticTap();
-            setViewMode('listening');
+            setViewMode('match');
           }}
           className={`flex flex-col items-center justify-center min-h-[48px] rounded-xl transition ${
-            viewMode === 'listening'
+            viewMode === 'match'
               ? 'text-obangBlue font-bold'
               : 'text-muted hover:text-ink font-medium'
           }`}
         >
-          <Headphones className="w-5 h-5" />
+          <Zap className="w-5 h-5" />
           <span className="text-[11px] tracking-tight mt-0.5 whitespace-nowrap">
-            {t.modes.listening}
+            {t.modes.match}
           </span>
         </button>
 
@@ -1366,8 +1358,8 @@ export default function App() {
         onConfirm={handleConfirmReset}
       />
 
-      {/* Ramyeon Floating Widget when timer is running and modal minimized */}
-      {isRamyeonRunning && !isRamyeonModalOpen && !isRamyeonDone && (
+      {/* Ramyeon Floating Widget when timer is running and modal minimized (in card and match mode it is embedded in the bottom action bar) */}
+      {isRamyeonRunning && !isRamyeonModalOpen && !isRamyeonDone && viewMode !== 'card' && viewMode !== 'match' && (
         <RamyeonFloatingWidget
           timeLeft={ramyeonTimeLeft}
           isRunning={isRamyeonRunning}
@@ -1396,7 +1388,7 @@ export default function App() {
       {/* Soju Roulette Modal */}
       <SojuRouletteModal
         isOpen={isSojuModalOpen}
-        onClose={() => setIsSojuModalOpen(false)}
+        onClose={handleCloseSojuModal}
         availableItems={bunnySourcePool}
         lang={language}
         onApplySelection={handleApplySojuSelection}
@@ -1405,18 +1397,20 @@ export default function App() {
       {/* Drama Mode Modal */}
       <DramaModeModal
         isOpen={isDramaModalOpen}
-        onClose={() => setIsDramaModalOpen(false)}
+        onClose={handleCloseDramaModal}
         lang={language}
         currentShowSub={specialPlayMode === 'drama' && subcategory !== 'all' ? subcategory : ''}
         currentMode={viewMode}
         dramaItems={dramaAllItems}
+        isDramaActive={specialPlayMode === 'drama'}
         onStartDramaMode={handleStartDramaMode}
+        onExitDramaMode={handleExitDrama}
       />
 
       {/* Bunny Mode / 토끼 모드 Modal */}
       <BunnyModeModal
         isOpen={isBunnyModalOpen}
-        onClose={() => setIsBunnyModalOpen(false)}
+        onClose={handleCloseBunnyModal}
         availableItems={bunnySourcePool}
         lang={language}
         onStartBunnyList={handleStartBunnyList}

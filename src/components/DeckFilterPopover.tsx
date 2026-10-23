@@ -132,11 +132,11 @@ export const DeckFilterPopover: React.FC<DeckFilterPopoverProps> = ({
         }`}
       >
         <Filter className="w-3.5 h-3.5 text-celadon shrink-0" />
-        <span className="truncate max-w-[200px] sm:max-w-xs">
+        <span className="truncate max-w-[130px] sm:max-w-[200px] md:max-w-xs">
           {activeSummaryParts.join(' · ')}
         </span>
-        <span className="text-muted font-mono tabular-nums">({deckCount})</span>
-        <span className="text-muted text-[10px] ml-0.5">▾</span>
+        <span className="text-muted font-mono tabular-nums shrink-0">({deckCount})</span>
+        <span className="text-muted text-[10px] ml-0.5 shrink-0">▾</span>
       </button>
 
       {/* Dropdown Filter Menu Panel */}
