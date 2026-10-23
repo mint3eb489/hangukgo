@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { VocabItem } from '../data/vocabData';
-import { speakKorean } from '../utils/speech';
 import { highlightKoreanVocab } from '../utils/highlightVocab';
 import { hapticRepeat, hapticSuccess, hapticTap } from '../utils/haptics';
 import { HanjaBreakdownBox } from './HanjaBreakdownBox';
 import { buildStrictCategoryOptions } from '../utils/quizDistractors';
 import confetti from 'canvas-confetti';
 import {
-  Volume2,
   CheckCircle2,
   XCircle,
   RotateCcw,
@@ -132,8 +130,6 @@ export const QuizView: React.FC<QuizViewProps> = ({
       hapticRepeat();
     }
 
-    // Auto-pronounce Korean word
-    speakKorean(currentQuestion.item.kr);
 
     if (isCorrect) {
       setScore((s) => s + 1);
@@ -319,17 +315,6 @@ export const QuizView: React.FC<QuizViewProps> = ({
               {renderCategoryBadge(currentQuestion.item.cat)}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              hapticTap();
-              speakKorean(currentQuestion.item.kr);
-            }}
-            title={lang === 'kr' ? '발음 듣기' : 'Aussprache anhören'}
-            className="min-w-[44px] min-h-[44px] -mr-2 rounded-full hover:bg-surface text-ink transition flex items-center justify-center"
-          >
-            <Volume2 className="w-5 h-5" />
-          </button>
         </div>
 
         <div className="text-center py-4 sm:py-6">

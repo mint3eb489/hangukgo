@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Plus, RotateCcw, ChevronRight, LogOut, Volume2 } from 'lucide-react';
+import { X, Plus, RotateCcw, ChevronRight, LogOut } from 'lucide-react';
 import { AppLanguage, translations } from '../utils/translations';
 import { RamyeonPacketIcon } from './RamyeonPacketIcon';
 import { SojuBottleIcon } from './SojuBottleIcon';
@@ -7,7 +7,6 @@ import { RetroTvIcon } from './RetroTvIcon';
 import { BunnyEarsIcon } from './BunnyEarsIcon';
 import { DancheongSettingsIcon } from './DancheongSettingsIcon';
 import { LanguageToggleButton } from './LanguageToggleButton';
-import { AudioSettingsModal } from './AudioSettingsModal';
 import { auth, signOutUser } from '../services/firebase';
 import { hapticTap } from '../utils/haptics';
 
@@ -50,7 +49,6 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
 }) => {
   const t = translations[language];
   const isKr = language === 'kr';
-  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -210,38 +208,7 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
             </div>
           </div>
 
-          {/* Section: Audio & Aussprache */}
-          <div className="space-y-2.5">
-            <h3 className="text-xs font-semibold text-muted tracking-wide">
-              {isKr ? '음성 및 오디오' : 'Audio & Aussprache'}
-            </h3>
 
-            <div className="rounded-2xl hanji-card">
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap();
-                  setIsAudioModalOpen(true);
-                }}
-                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-surface/70 transition rounded-2xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-obangBlue/15 text-obangBlue flex items-center justify-center shrink-0">
-                    <Volume2 className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-ink">
-                      {isKr ? '오디오 진단 및 음성 설정' : 'Audio-Hilfe & Ton-Test'}
-                    </div>
-                    <div className="text-[11px] text-muted">
-                      {isKr ? '발음 테스트 및 iPhone 문제 해결' : 'Stimme testen, Engine wählen & iPhone-Hilfe'}
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted shrink-0" />
-              </button>
-            </div>
-          </div>
 
           {/* Section 3: Data, Vocab & Backup */}
           <div className="space-y-2.5">
@@ -324,12 +291,6 @@ export const ExtrasDrawer: React.FC<ExtrasDrawerProps> = ({
           </div>
         </div>
       </aside>
-
-      <AudioSettingsModal
-        isOpen={isAudioModalOpen}
-        onClose={() => setIsAudioModalOpen(false)}
-        lang={language}
-      />
     </div>
   );
 };

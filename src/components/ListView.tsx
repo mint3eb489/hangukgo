@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { VocabItem } from '../data/vocabData';
-import { speakKorean } from '../utils/speech';
 import { SrsMap } from '../utils/srs';
 import { highlightKoreanVocab } from '../utils/highlightVocab';
 import { getHanjaInfo } from '../utils/hanjaLexicon';
 import { HanjaBreakdownBox } from './HanjaBreakdownBox';
 import { hapticTap } from '../utils/haptics';
 import { AppLanguage, translations } from '../utils/translations';
-import { Search, Volume2, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface ListViewProps {
   items: VocabItem[];
@@ -111,17 +110,6 @@ export const ListView: React.FC<ListViewProps> = ({
                   <span className="hangul-display font-bold text-xl sm:text-2xl text-ink">
                     {item.kr}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      hapticTap();
-                      speakKorean(item.kr);
-                    }}
-                    className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface transition"
-                    title={t.list.listenTitle}
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
 
                   {/* Clean unboxed metadata: only subcategory/topic */}
                   <div className="flex items-center gap-1.5 text-xs text-muted">

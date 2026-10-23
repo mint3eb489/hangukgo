@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { VocabItem } from '../data/vocabData';
-import { speakKorean } from '../utils/speech';
 import { SrsMap, getSrsRecord, getSrsStageLabel, formatDueText } from '../utils/srs';
 import { highlightKoreanVocab } from '../utils/highlightVocab';
 import { hapticFlip, hapticRepeat, hapticSuccess, hapticTap } from '../utils/haptics';
@@ -10,13 +9,11 @@ import { BunnyEarsIcon } from './BunnyEarsIcon';
 import { RetroTvIcon } from './RetroTvIcon';
 import { SojuBottleIcon } from './SojuBottleIcon';
 import {
-  Volume2,
   ArrowLeft,
   ArrowRight,
   RotateCcw,
   Check,
   Sparkles,
-  Snail,
 } from 'lucide-react';
 
 import { AppLanguage, translations } from '../utils/translations';
@@ -70,7 +67,6 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
   const t = translations[lang];
   const touchAreaRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number>(0);
-  const [speechRate, setSpeechRate] = useState<number>(1.0);
 
   const currentItem = deck[currentIndex];
 
@@ -203,16 +199,9 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
   const dueText = formatDueText(srsRecord.nextReviewDate, srsRecord.level, lang);
   const progressPercent = ((currentIndex + 1) / deck.length) * 100;
 
-  const handleSpeak = (e: React.MouseEvent, preferExample: boolean = false, slow = false) => {
-    e.stopPropagation();
-    hapticTap();
-    const textToSpeak = preferExample && currentItem.exKr ? currentItem.exKr : currentItem.kr;
-    speakKorean(textToSpeak, slow ? 0.75 : speechRate);
-  };
-
   return (
     <div className="mt-0.5 sm:mt-1 flex flex-col flex-1 min-h-0 justify-between">
-      {/* Top Meta Bar: Card Position, SRS Status & Speed Toggle */}
+      {/* Top Meta Bar: Card Position & SRS Status */}
       <div className="shrink-0">
         <div className="flex items-center justify-between text-xs text-muted mb-1 px-1">
           <div className="flex items-center gap-1.5 tabular-nums">
@@ -224,24 +213,6 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
               {srsBadge.name} ({dueText})
             </span>
           </div>
-
-          {/* Single Snail Speed Toggle (1.0x ⇄ 0.75x) */}
-          <button
-            type="button"
-            onClick={() => {
-              hapticTap();
-              setSpeechRate((prev) => (prev === 1.0 ? 0.75 : 1.0));
-            }}
-            title={t.flashcard.speedSlow}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition flex items-center gap-1.5 whitespace-nowrap ${
-              speechRate === 0.75
-                ? 'bg-celadon/15 border-celadon/45 text-celadon shadow-2xs'
-                : 'bg-surface border-border-card text-muted hover:text-ink'
-            }`}
-          >
-            <Snail className="w-3.5 h-3.5" />
-            <span className="tabular-nums">{speechRate === 0.75 ? '0.75x' : '1.0x'}</span>
-          </button>
         </div>
 
         {/* Progress Bar */}
@@ -274,21 +245,11 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
                 <span>{currentItem.sub}</span>
               </div>
 
-              {/* SRS Level Text + Audio Button */}
+              {/* SRS Level Text */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono tabular-nums text-muted">
                   SRS {srsRecord.level}/5
                 </span>
-
-                <button
-                  type="button"
-                  onClick={(e) => handleSpeak(e, false)}
-                  title={lang === 'kr' ? '발음 듣기' : 'Koreanische Aussprache anhören'}
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full hover:bg-surface text-ink transition flex items-center justify-center"
-                  aria-label="Aussprache anhören"
-                >
-                  <Volume2 className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
@@ -319,16 +280,11 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({
                 <span>{currentItem.sub}</span>
               </div>
 
-              <button
-                type="button"
-                onClick={(e) => handleSpeak(e, true)}
-                title={t.flashcard.listenSentence}
-                className="min-h-[40px] px-3 py-1.5 rounded-xl bg-surface/80 hover:bg-surface text-ink transition flex items-center gap-1.5 text-xs font-semibold border border-border-card"
-                aria-label="Beispielsatz vorlesen"
-              >
-                <span>{t.flashcard.readAloud}</span>
-                <Volume2 className="w-4 h-4 text-celadon" />
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono tabular-nums text-muted">
+                  SRS {srsRecord.level}/5
+                </span>
+              </div>
             </div>
 
             <div className="my-auto text-center space-y-3 py-2">
